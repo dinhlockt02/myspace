@@ -13,6 +13,11 @@ apt-get install -y \
   ca-certificates \
   gnupg
 
+# Install AWS SSM Agent for Ubuntu AMD64
+systemctl enable snap.amazon-ssm-agent.amazon-ssm-agent.service
+systemctl start snap.amazon-ssm-agent.amazon-ssm-agent.service
+
+
 systemctl enable docker
 usermod -aG docker ubuntu
 
@@ -20,18 +25,18 @@ curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
 apt-get install -y nodejs
 npm install -g pnpm
 
-curl -fsSL "https://releases.hashicorp.com/terraform/1.9.8/terraform_1.9.8_linux_arm64.zip" -o /tmp/terraform.zip
+curl -fsSL "https://releases.hashicorp.com/terraform/1.9.8/terraform_1.9.8_linux_amd64.zip" -o /tmp/terraform.zip
 unzip /tmp/terraform.zip -d /usr/local/bin/
 rm /tmp/terraform.zip
 
-curl -fsSL "https://awscli.amazonaws.com/awscli-exe-linux-aarch64.zip" -o /tmp/awscliv2.zip
+curl -fsSL "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o /tmp/awscliv2.zip
 unzip /tmp/awscliv2.zip -d /tmp/
 /tmp/aws/install
 rm -rf /tmp/aws /tmp/awscliv2.zip
 
 mkdir -p /opt/actions-runner
 cd /opt/actions-runner
-curl -sL "https://github.com/actions/runner/releases/download/v${RUNNER_VERSION}/actions-runner-linux-arm64-${RUNNER_VERSION}.tar.gz" -o runner.tar.gz
+curl -sL "https://github.com/actions/runner/releases/download/v${RUNNER_VERSION}/actions-runner-linux-x64-${RUNNER_VERSION}.tar.gz" -o runner.tar.gz
 tar xzf runner.tar.gz
 rm runner.tar.gz
 chown -R ubuntu:ubuntu /opt/actions-runner

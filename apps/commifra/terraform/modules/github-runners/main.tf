@@ -4,12 +4,12 @@ data "aws_ami" "runner" {
 
   filter {
     name   = "name"
-    values = ["github-runner-arm64-*"]
+    values = ["github-runner-amd64-*"]
   }
 
   filter {
     name   = "tag:Name"
-    values = ["github-runner-arm64"]
+    values = ["github-runner-amd64"]
   }
 
   filter {
@@ -24,7 +24,7 @@ data "aws_ami" "runner" {
 
   filter {
     name   = "architecture"
-    values = ["arm64"]
+    values = ["x86_64"]
   }
 }
 

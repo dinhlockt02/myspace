@@ -14,6 +14,12 @@ variable "github_repo" {
   description = "GitHub repository name"
 }
 
+variable "github_pat" {
+  type        = string
+  sensitive   = true
+  description = "GitHub PAT for runner registration (stored in SSM)"
+}
+
 variable "vpc_cidr" {
   type        = string
   default     = "10.0.0.0/16"
@@ -34,8 +40,8 @@ variable "allowed_environments" {
 
 variable "runner_instance_types" {
   type        = list(string)
-  description = "EC2 ARM64/Graviton instance types for spot runners"
-  default     = ["t4g.medium"]
+  description = "EC2 AMD64 instance types for spot runners"
+  default     = ["t3.medium"]
 }
 
 variable "runner_max_count" {

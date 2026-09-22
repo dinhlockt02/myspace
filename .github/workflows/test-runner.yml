@@ -5,7 +5,7 @@ on:
 
 jobs:
   test:
-    runs-on: [self-hosted, linux, arm]
+    runs-on: [self-hosted, linux, x64]
     steps:
       - name: System info
         run: |
@@ -16,8 +16,8 @@ jobs:
         run: |
           arch=$(uname -m)
           echo "Architecture: $arch"
-          if [ "$arch" != "aarch64" ]; then
-            echo "ERROR: Expected arm64, got $arch"
+          if [ "$arch" != "x86_64" ]; then
+            echo "ERROR: Expected x86_64, got $arch"
             exit 1
           fi
 
@@ -32,11 +32,11 @@ jobs:
 
       - name: Test Docker
         run: |
-          docker run --rm alpine:latest echo "Docker works on ARM"
+          docker run --rm alpine:latest echo "Docker works on AMD64"
 
       - name: Test AWS CLI
         run: |
           aws sts get-caller-identity || echo "AWS credentials not configured (expected)"
 
       - name: Success
-        run: echo "✓ Self-hosted ARM runner is working!"
+        run: echo "✓ Self-hosted AMD64 runner is working!"

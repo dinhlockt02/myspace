@@ -47,6 +47,29 @@ resource "aws_iam_role_policy" "runner" {
       {
         Effect = "Allow"
         Action = [
+          "ssm:UpdateInstanceInformation",
+          "ssmmessages:CreateControlChannel",
+          "ssmmessages:CreateDataChannel",
+          "ssmmessages:OpenControlChannel",
+          "ssmmessages:OpenDataChannel"
+        ]
+        Resource = "*"
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "ec2messages:AcknowledgeMessage",
+          "ec2messages:DeleteMessage",
+          "ec2messages:FailMessage",
+          "ec2messages:GetEndpoint",
+          "ec2messages:GetMessages",
+          "ec2messages:SendReply"
+        ]
+        Resource = "*"
+      },
+      {
+        Effect = "Allow"
+        Action = [
           "logs:CreateLogGroup",
           "logs:CreateLogStream",
           "logs:PutLogEvents"
@@ -90,8 +113,8 @@ resource "aws_iam_instance_profile" "runner" {
   role = aws_iam_role.runner.name
 }
 
-resource "aws_iam_role" "lambda" {
-  name = "commifra-github-runner-lambda"
+resource "aws_iam_role" "webhook_lambda" {
+  name = "commifra-github-runner-webhook-lambda"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -111,9 +134,9 @@ resource "aws_iam_role" "lambda" {
   })
 }
 
-resource "aws_iam_role_policy" "lambda" {
-  name = "lambda-permissions"
-  role = aws_iam_role.lambda.id
+resource "aws_iam_role_policy" "webhook_lambda" {
+  name = "webhook-lambda-permissions"
+  role = aws_iam_role.webhook_lambda.id
 
   policy = jsonencode({
     Version = "2012-10-17"
@@ -126,6 +149,72 @@ resource "aws_iam_role_policy" "lambda" {
           "logs:PutLogEvents"
         ]
         Resource = "arn:aws:logs:*:${data.aws_caller_identity.current.account_id}:*"
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "ssm:GetParameter"
+        ]
+        Resource = [
+          "arn:aws:ssm:*:${data.aws_caller_identity.current.account_id}:parameter${var.webhook_secret_ssm}"
+        ]
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "sqs:SendMessage"
+        ]
+        Resource = aws_sqs_queue.jobs.arn
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role" "consumer_lambda" {
+  name = "commifra-github-runner-consumer-lambda"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Principal = {
+          Service = "lambda.amazonaws.com"
+        }
+        Action = "sts:AssumeRole"
+      }
+    ]
+  })
+
+  tags = merge(local.common_tags, {
+    Module = "github-runners"
+  })
+}
+
+resource "aws_iam_role_policy" "consumer_lambda" {
+  name = "consumer-lambda-permissions"
+  role = aws_iam_role.consumer_lambda.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "logs:CreateLogGroup",
+          "logs:CreateLogStream",
+          "logs:PutLogEvents"
+        ]
+        Resource = "arn:aws:logs:*:${data.aws_caller_identity.current.account_id}:*"
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "sqs:ReceiveMessage",
+          "sqs:DeleteMessage",
+          "sqs:GetQueueAttributes"
+        ]
+        Resource = aws_sqs_queue.jobs.arn
       },
       {
         Effect = "Allow"
@@ -150,7 +239,6 @@ resource "aws_iam_role_policy" "lambda" {
           "ssm:GetParameter"
         ]
         Resource = [
-          "arn:aws:ssm:*:${data.aws_caller_identity.current.account_id}:parameter${var.webhook_secret_ssm}",
           "arn:aws:ssm:*:${data.aws_caller_identity.current.account_id}:parameter${var.github_token_ssm}"
         ]
       }

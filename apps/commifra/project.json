@@ -10,7 +10,8 @@
         "command": "terraform validate",
         "cwd": "apps/commifra/terraform"
       },
-      "cache": true
+      "cache": true,
+      "dependsOn": ["lambda-build"]
     },
     "fmt": {
       "executor": "nx:run-commands",
@@ -39,14 +40,24 @@
       "options": {
         "command": "terraform init && terraform plan",
         "cwd": "apps/commifra/terraform"
-      }
+      },
+      "dependsOn": ["lambda-build"]
     },
     "apply": {
       "executor": "nx:run-commands",
       "options": {
         "command": "terraform apply -auto-approve",
         "cwd": "apps/commifra/terraform"
-      }
+      },
+      "dependsOn": ["lambda-build"]
+    },
+    "lambda-build": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "pnpm run build",
+        "cwd": "apps/commifra/terraform/modules/github-runners/lambda"
+      },
+      "cache": true
     },
     "packer-validate": {
       "executor": "nx:run-commands",

@@ -1,0 +1,19 @@
+{
+  "name": "github-runners-lambda",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "build": "node build.mjs"
+  },
+  "dependencies": {
+    "@aws-sdk/client-ec2": "^3.621.0",
+    "@aws-sdk/client-sqs": "^3.621.0",
+    "@aws-sdk/client-ssm": "^3.621.0"
+  },
+  "devDependencies": {
+    "esbuild": "^0.23.0"
+  },
+  "allowScripts": {
+    "esbuild@0.23.1": true
+  }
+}

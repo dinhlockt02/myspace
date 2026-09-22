@@ -2,6 +2,7 @@ packages:
   - 'apps/*/frontend'
   - 'apps/*/backend'
   - 'apps/commifra'
+  - 'apps/commifra/terraform/modules/github-runners/lambda'
 allowBuilds:
   esbuild: true
   nx: true

@@ -50,11 +50,12 @@ module "github_runners" {
 
   github_owner        = var.github_owner
   github_repo         = var.github_repo
+  github_pat          = var.github_pat
   vpc_id              = module.vpc.vpc_id
-  subnet_ids          = module.vpc.private_subnet_ids
+  subnet_ids          = module.vpc.public_subnet_ids
   oidc_provider_arn   = module.oidc.provider_arn
-  runner_labels       = ["self-hosted", "linux", "arm"]
+  runner_labels       = ["self-hosted", "linux", "x64"]
   instance_types      = var.runner_instance_types
-  runner_architecture = "arm64"
+  runner_architecture = "x86_64"
   max_count           = var.runner_max_count
 }

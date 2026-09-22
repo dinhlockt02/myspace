@@ -14,20 +14,20 @@ variable "region" {
 
 variable "instance_type" {
   type    = string
-  default = "t4g.medium"
+  default = "t3.medium"
 }
 
 variable "runner_version" {
   type    = string
-  default = "2.321.0"
+  default = "2.322.0"
 }
 
-data "amazon-ami" "ubuntu_arm64" {
+data "amazon-ami" "ubuntu_amd64" {
   filters = {
-    name                = "ubuntu/images/hvm-ssd-gp3/ubuntu-noble-24.04-arm64-server-*"
+    name                = "ubuntu/images/hvm-ssd-gp3/ubuntu-noble-24.04-amd64-server-*"
     root-device-type    = "ebs"
     virtualization-type = "hvm"
-    architecture        = "arm64"
+    architecture        = "x86_64"
   }
   most_recent = true
   owners      = ["099720109477"]
@@ -35,10 +35,10 @@ data "amazon-ami" "ubuntu_arm64" {
 }
 
 source "amazon-ebs" "runner" {
-  ami_name      = "github-runner-arm64-${var.runner_version}-{{timestamp}}"
+  ami_name      = "github-runner-amd64-${var.runner_version}-{{timestamp}}"
   instance_type = var.instance_type
   region        = var.region
-  source_ami    = data.amazon-ami.ubuntu_arm64.id
+  source_ami    = data.amazon-ami.ubuntu_amd64.id
   ssh_username  = "ubuntu"
 
   launch_block_device_mappings {
@@ -52,7 +52,7 @@ source "amazon-ebs" "runner" {
     Project       = "myspace"
     App           = "commifra"
     Module        = "github-runners"
-    Name          = "github-runner-arm64"
+    Name          = "github-runner-amd64"
     RunnerVersion = var.runner_version
     ManagedBy     = "packer"
   }

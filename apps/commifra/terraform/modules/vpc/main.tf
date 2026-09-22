@@ -60,29 +60,6 @@ resource "aws_subnet" "private" {
   })
 }
 
-resource "aws_eip" "nat" {
-  domain = "vpc"
-
-  tags = merge(local.common_tags, {
-    Name   = "${var.project_name}-nat-eip"
-    Module = "vpc"
-  })
-
-  depends_on = [aws_internet_gateway.main]
-}
-
-resource "aws_nat_gateway" "main" {
-  allocation_id = aws_eip.nat.id
-  subnet_id     = aws_subnet.public[0].id
-
-  tags = merge(local.common_tags, {
-    Name   = "${var.project_name}-nat"
-    Module = "vpc"
-  })
-
-  depends_on = [aws_internet_gateway.main]
-}
-
 resource "aws_route_table" "public" {
   vpc_id = aws_vpc.main.id
 
@@ -112,12 +89,6 @@ resource "aws_route_table" "private" {
     Name   = "${var.project_name}-private-rt"
     Module = "vpc"
   })
-}
-
-resource "aws_route" "private_nat" {
-  route_table_id         = aws_route_table.private.id
-  destination_cidr_block = "0.0.0.0/0"
-  nat_gateway_id         = aws_nat_gateway.main.id
 }
 
 resource "aws_route_table_association" "private" {

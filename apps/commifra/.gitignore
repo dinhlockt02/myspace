@@ -10,3 +10,4 @@ override.tf.json
 *.tfvars
 !*.tfvars.example
 *.zip
+terraform/modules/github-runners/lambda/dist/
