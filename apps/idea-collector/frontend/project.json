@@ -1,0 +1,38 @@
+{
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "name": "idea-collector-frontend",
+  "projectType": "application",
+  "sourceRoot": "apps/idea-collector/frontend/src",
+  "targets": {
+    "dev": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "pnpm run dev",
+        "cwd": "apps/idea-collector/frontend"
+      }
+    },
+    "build": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "pnpm run build",
+        "cwd": "apps/idea-collector/frontend"
+      },
+      "outputs": ["{projectRoot}/dist"]
+    },
+    "preview": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "pnpm run preview",
+        "cwd": "apps/idea-collector/frontend"
+      }
+    },
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "pnpm run lint",
+        "cwd": "apps/idea-collector/frontend"
+      }
+    }
+  },
+  "tags": ["app:idea-collector", "scope:frontend", "type:app"]
+}

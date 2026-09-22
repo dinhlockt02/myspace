@@ -1,0 +1,21 @@
+{
+  "name": "myspace",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "apps/idea-collector/frontend"
+  ],
+  "scripts": {
+    "nx": "nx",
+    "build": "nx run-many -t build",
+    "test": "nx run-many -t test",
+    "lint": "nx run-many -t lint"
+  },
+  "devDependencies": {
+    "@nx/js": "^20.0.0",
+    "@nx/vite": "^20.0.0",
+    "@nx/web": "^20.0.0",
+    "@nx/workspace": "^20.0.0",
+    "nx": "^20.0.0"
+  }
+}

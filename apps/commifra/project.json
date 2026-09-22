@@ -1,0 +1,68 @@
+{
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "name": "commifra",
+  "projectType": "library",
+  "sourceRoot": "apps/commifra",
+  "targets": {
+    "validate": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "terraform validate",
+        "cwd": "apps/commifra/terraform"
+      },
+      "cache": true
+    },
+    "fmt": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "terraform fmt -check -recursive",
+        "cwd": "apps/commifra"
+      },
+      "cache": true
+    },
+    "plan-bootstrap": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "terraform init -backend=false && terraform plan",
+        "cwd": "apps/commifra/bootstrap"
+      }
+    },
+    "apply-bootstrap": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "terraform init -backend=false && terraform apply",
+        "cwd": "apps/commifra/bootstrap"
+      }
+    },
+    "plan": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "terraform init && terraform plan",
+        "cwd": "apps/commifra/terraform"
+      }
+    },
+    "apply": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "terraform apply -auto-approve",
+        "cwd": "apps/commifra/terraform"
+      }
+    },
+    "packer-validate": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "packer validate .",
+        "cwd": "apps/commifra/terraform/packer"
+      },
+      "cache": true
+    },
+    "packer-build": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "packer init . && packer build .",
+        "cwd": "apps/commifra/terraform/packer"
+      }
+    }
+  },
+  "tags": ["app:commifra", "scope:infra", "type:library"]
+}

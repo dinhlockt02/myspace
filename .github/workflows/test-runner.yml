@@ -1,0 +1,42 @@
+name: Test Self-Hosted Runner
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: [self-hosted, linux, arm]
+    steps:
+      - name: System info
+        run: |
+          uname -a
+          cat /etc/os-release | head -5
+
+      - name: Check architecture
+        run: |
+          arch=$(uname -m)
+          echo "Architecture: $arch"
+          if [ "$arch" != "aarch64" ]; then
+            echo "ERROR: Expected arm64, got $arch"
+            exit 1
+          fi
+
+      - name: Check tools
+        run: |
+          echo "Node: $(node --version)"
+          echo "pnpm: $(pnpm --version)"
+          echo "Terraform: $(terraform version -json | jq -r '.terraform_version')"
+          echo "AWS CLI: $(aws --version)"
+          echo "Docker: $(docker --version)"
+          echo "Git: $(git --version)"
+
+      - name: Test Docker
+        run: |
+          docker run --rm alpine:latest echo "Docker works on ARM"
+
+      - name: Test AWS CLI
+        run: |
+          aws sts get-caller-identity || echo "AWS credentials not configured (expected)"
+
+      - name: Success
+        run: echo "✓ Self-hosted ARM runner is working!"

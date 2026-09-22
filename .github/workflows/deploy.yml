@@ -1,0 +1,98 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+
+      - name: Build Lambda binary
+        working-directory: apps/idea-collector/backend
+        run: GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o main main.go
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: lambda-binary
+          path: apps/idea-collector/backend/main
+
+  deploy-dev:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    environment: dev
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: lambda-binary
+          path: apps/idea-collector/backend
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: '1.9.8'
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ secrets.AWS_REGION || 'us-east-1' }}
+
+      - name: Terraform init
+        working-directory: apps/idea-collector/deploy/envs/dev
+        run: terraform init
+
+      - name: Terraform plan
+        working-directory: apps/idea-collector/deploy/envs/dev
+        run: terraform plan -input=false
+
+      - name: Terraform apply
+        working-directory: apps/idea-collector/deploy/envs/dev
+        run: terraform apply -auto-approve -input=false
+
+  deploy-prod:
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    environment: prod
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: lambda-binary
+          path: apps/idea-collector/backend
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: '1.9.8'
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ secrets.AWS_REGION || 'us-east-1' }}
+
+      - name: Terraform init
+        working-directory: apps/idea-collector/deploy/envs/prod
+        run: terraform init
+
+      - name: Terraform plan
+        working-directory: apps/idea-collector/deploy/envs/prod
+        run: terraform plan -input=false
+
+      - name: Terraform apply
+        working-directory: apps/idea-collector/deploy/envs/prod
+        run: terraform apply -auto-approve -input=false

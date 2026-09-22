@@ -1,0 +1,7 @@
+packages:
+  - 'apps/*/frontend'
+  - 'apps/*/backend'
+  - 'apps/commifra'
+allowBuilds:
+  esbuild: true
+  nx: true
