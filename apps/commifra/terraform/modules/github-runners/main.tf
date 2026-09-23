@@ -125,6 +125,7 @@ resource "aws_launch_template" "runner" {
   }
 
   update_default_version = true
+  instance_initiated_shutdown_behavior = "terminate"
 }
 
 resource "aws_autoscaling_group" "runner" {

@@ -19,7 +19,7 @@ variable "instance_type" {
 
 variable "runner_version" {
   type    = string
-  default = "2.322.0"
+  default = "2.337.0"
 }
 
 data "amazon-ami" "ubuntu_amd64" {
