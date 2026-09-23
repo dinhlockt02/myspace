@@ -123,6 +123,8 @@ resource "aws_launch_template" "runner" {
   lifecycle {
     create_before_destroy = true
   }
+
+  update_default_version = true
 }
 
 resource "aws_autoscaling_group" "runner" {

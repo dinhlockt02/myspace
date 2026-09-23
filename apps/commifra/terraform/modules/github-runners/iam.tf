@@ -1,5 +1,14 @@
 data "aws_caller_identity" "current" {}
 
+resource "aws_iam_service_linked_role" "ssm" {
+  aws_service_name = "ssm.amazonaws.com"
+  description      = "Service-linked role for AWS Systems Manager"
+
+  tags = merge(local.common_tags, {
+    Module = "github-runners"
+  })
+}
+
 resource "aws_iam_role" "runner" {
   name = "commifra-github-runner"
 
@@ -7,20 +16,10 @@ resource "aws_iam_role" "runner" {
     Version = "2012-10-17"
     Statement = [
       {
-        Effect = "Allow"
-        Principal = {
-          Federated = var.oidc_provider_arn
-        }
-        Action = "sts:AssumeRoleWithWebIdentity"
-        Condition = {
-          StringEquals = {
-            "token.actions.githubusercontent.com:aud" = "sts.amazonaws.com"
-          }
-          StringLike = {
-            "token.actions.githubusercontent.com:sub" = "repo:${var.github_owner}/${var.github_repo}:*"
-          }
-        }
-      }
+      Effect    = "Allow"
+      Principal = { Service = "ec2.amazonaws.com" }
+      Action    = "sts:AssumeRole"
+    }
     ]
   })
 
