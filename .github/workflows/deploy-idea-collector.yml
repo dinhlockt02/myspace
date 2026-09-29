@@ -1,11 +1,6 @@
 name: Deploy Idea Collector
 
-on:
-  push:
-    branches:
-      - main
-    paths:
-      - 'apps/idea-collector/**'
+on: workflow_call 
 
 permissions:
   id-token: write
@@ -14,7 +9,7 @@ permissions:
 jobs:
   deploy-infra:
     name: Terraform Apply
-    runs-on: ubuntu:latest
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 

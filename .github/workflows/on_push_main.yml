@@ -19,7 +19,7 @@ permissions:
 
 jobs:
   detect:
-    runs-on: ubuntu:latest
+    runs-on: ubuntu-latest
     outputs:
       services: ${{ steps.pick.outputs.services }}
     steps:
@@ -49,7 +49,7 @@ jobs:
           echo "Afftected services: $LIST"
           echo "services=$LIST" >> "$GITHUB_OUTPUT"
   idea-collector:
-    runs-on: ubuntu:latest
+    runs-on: ubuntu-latest
     needs: detect
     if: contains(fromJson(needs.detect.outputs.services), 'idea-collector-infra')
     steps:
