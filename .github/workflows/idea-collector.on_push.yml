@@ -1,0 +1,25 @@
+name: On push Idea Collector
+
+on: 
+  workflow_call:
+    inputs:
+      project:
+        type: string
+        required: true
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  apply-infra:
+    name: Terraform Apply
+    runs-on: ubuntu-latest
+    if: ${{ inputs.project == 'idea-collector-infra' }}
+    steps:
+      - uses: ./.github/actions/idea-collector/setup.yml
+
+      - id: pick
+        shell: bash
+        run: pnpm nx run idea-collector-infra:apply
+      

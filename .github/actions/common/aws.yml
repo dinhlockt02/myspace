@@ -1,0 +1,15 @@
+# .github/actions/deploy/action.yml
+name: Setup AWS
+description: Setup AWS Enviroment
+
+inputs:
+outputs:
+
+runs:
+  using: composite
+  steps:
+    - name: Assume AWS role
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        role-to-assume: ${{ secrets.RUNNER_IAM_ROLE }}
+        aws-region: ap-southeast-1

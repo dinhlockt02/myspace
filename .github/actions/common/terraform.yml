@@ -1,0 +1,18 @@
+# .github/actions/deploy/action.yml
+name: Setup terraform
+description: Setup terraform
+
+inputs:
+outputs:
+
+runs:
+  using: composite
+  steps:
+    - uses: pnpm/setup@v1
+      with:
+        version: 11
+        runtime: node@22
+        cache: true
+
+    # Sets NX_BASE = last successful commit of this workflow on main, NX_HEAD = current commit
+    - uses: nrwl/nx-set-shas@v4

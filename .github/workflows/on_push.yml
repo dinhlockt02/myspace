@@ -6,11 +6,11 @@ on:
   workflow_dispatch:
     inputs:
       services:
-        description: "Comma-separated services to deploy (e.g. user-service,order-service). Leave empty = affected only"
+        description: "Comma-separated services to trigger (e.g. user-service,order-service). Leave empty = affected only"
         required: false
         default: ""
       all:
-        description: "Deploy ALL services with a deploy target"
+        description: "Trigger ALL services"
         type: boolean
         default: false
 
@@ -27,14 +27,7 @@ jobs:
         with:
           fetch-depth: 0 # full history so Nx can diff
 
-      - uses: pnpm/setup@v1
-        with:
-          version: 11
-          runtime: node@22
-          cache: true
-
-      # Sets NX_BASE = last successful commit of this workflow on main, NX_HEAD = current commit
-      - uses: nrwl/nx-set-shas@v4
+      - uses: ./.github/actions/common/nx.yml
 
       - id: pick
         shell: bash
@@ -48,9 +41,11 @@ jobs:
           fi
           echo "Afftected services: $LIST"
           echo "services=$LIST" >> "$GITHUB_OUTPUT"
-  idea-collector-infra:
-    runs-on: ubuntu-latest
+  idea-collector:
+    uses: ./.github/workflows/idea-collector.on_push.yml
     needs: detect
     if: contains(fromJson(needs.detect.outputs.services), 'idea-collector-infra')
-    steps:
-    - uses: ./.github/workflows/idea-collector-infra.on_push_main.yml
+    with:
+      project: 'idea-collector-infra'
+
+    
