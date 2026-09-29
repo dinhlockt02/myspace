@@ -32,6 +32,18 @@
         "command": "pnpm run lint",
         "cwd": "apps/idea-collector/frontend"
       }
+    },
+    "deploy": {
+      "executor": "nx:run-commands",
+      "options": {
+        "commands": [
+          "aws s3 sync dist/ s3://$S3_BUCKET --delete",
+          "aws cloudfront create-invalidation --distribution-id $CLOUDFRONT_DIST_ID --paths '/*'"
+        ],
+        "cwd": "apps/idea-collector/frontend",
+        "parallel": false
+      },
+      "dependsOn": ["build"]
     }
   },
   "tags": ["app:idea-collector", "scope:frontend", "type:app"]

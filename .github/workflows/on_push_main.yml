@@ -1,0 +1,56 @@
+name: On push main
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      services:
+        description: "Comma-separated services to deploy (e.g. user-service,order-service). Leave empty = affected only"
+        required: false
+        default: ""
+      all:
+        description: "Deploy ALL services with a deploy target"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  detect:
+    runs-on: ubuntu:latest
+    outputs:
+      services: ${{ steps.pick.outputs.services }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # full history so Nx can diff
+
+      - uses: pnpm/setup@v1
+        with:
+          version: 11
+          runtime: node@22
+          cache: true
+
+      # Sets NX_BASE = last successful commit of this workflow on main, NX_HEAD = current commit
+      - uses: nrwl/nx-set-shas@v4
+
+      - id: pick
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.all }}" = "true" ]; then
+            LIST=$(pnpm nx show projects --json)
+          elif [ -n "${{ inputs.services }}" ]; then
+            LIST=$(echo "${{ inputs.services }}" | jq -Rc 'split(",") | map(gsub("^\\s+|\\s+$";"")) | map(select(length>0))')
+          else
+            LIST=$(pnpm nx show projects --affected --json)
+          fi
+          echo "Afftected services: $LIST"
+          echo "services=$LIST" >> "$GITHUB_OUTPUT"
+  idea-collector:
+    runs-on: ubuntu:latest
+    needs: detect
+    if: contains(fromJson(needs.detect.outputs.services), 'idea-collector-infra')
+    steps:
+    - uses: ./.github/workflows/idea-collector-infra.on_push_main.yml

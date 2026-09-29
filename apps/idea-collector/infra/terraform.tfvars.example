@@ -1,0 +1,21 @@
+# Remote Backend Configuration (for backend.hcl or -backend-config)
+backend_bucket = "comminfra.myspace.dinhloc.dev"
+backend_key    = "idea-collector/terraform.tfstate"
+backend_region = "ap-southeast-1"
+
+# General Project Configuration
+region       = "ap-southeast-1"
+project_name = "idea-collector"
+
+# S3 Frontend Bucket
+bucket_name = "idea-collector-frontend"
+
+# CloudFront Configuration (Optional Overrides)
+# default_root_object = "index.html"
+# price_class         = "PriceClass_100"
+
+tags = {
+  Project   = "myspace"
+  App       = "idea-collector"
+  ManagedBy = "terraform"
+}

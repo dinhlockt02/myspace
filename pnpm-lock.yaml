@@ -42,8 +42,6 @@ importers:
         specifier: ^0.23.0
         version: 0.23.1
 
-  apps/idea-collector/backend: {}
-
   apps/idea-collector/frontend:
     dependencies:
       react:

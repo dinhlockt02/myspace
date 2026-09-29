@@ -37,3 +37,13 @@ output "oidc_provider_arn" {
   value       = module.oidc.provider_arn
   description = "OIDC provider ARN"
 }
+
+output "route53_zone_id" {
+  description = "The Hosted Zone ID"
+  value       = length(module.route53) > 0 ? module.route53[0].route53_zone_id : null
+}
+
+output "route53_zone_name_servers" {
+  description = "Name servers of the created hosted zone"
+  value       = length(module.route53) > 0 ? module.route53[0].route53_zone_name_servers : null
+}

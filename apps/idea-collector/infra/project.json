@@ -1,0 +1,40 @@
+{
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "name": "idea-collector-infra",
+  "projectType": "library",
+  "sourceRoot": "apps/idea-collector/infra",
+  "targets": {
+    "validate": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "terraform validate",
+        "cwd": "apps/idea-collector/infra"
+      },
+      "cache": true
+    },
+    "fmt": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "terraform fmt -check -recursive",
+        "cwd": "apps/idea-collector/infra"
+      },
+      "cache": true
+    },
+    "plan": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "terraform init && terraform plan",
+        "cwd": "apps/idea-collector/infra"
+      }
+    },
+    "apply": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "terraform apply -auto-approve",
+        "cwd": "apps/idea-collector/infra"
+      }
+    }
+  },
+  "tags": ["app:idea-collector", "scope:infra", "type:library"]
+}
+

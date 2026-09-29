@@ -1,0 +1,75 @@
+openapi: 3.0.3
+info:
+  title: Idea Collector API
+  version: 1.0.0
+  description: Public API for ingesting user ideas.
+
+servers:
+  - url: https://idea.dinhloc.dev
+    description: Production Environment
+
+paths:
+  /api/ideas:
+    post:
+      summary: Submit a new idea
+      description: Ingests a user-submitted idea, validates the payload, and durably stores it.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IdeaSubmissionRequest'
+      responses:
+        '201':
+          description: Idea successfully received and stored.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IdeaSubmissionResponse'
+        '400':
+          description: Invalid request payload (e.g., missing idea text, too large).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  schemas:
+    IdeaSubmissionRequest:
+      type: object
+      required:
+        - idea
+        - timestamp
+      properties:
+        idea:
+          type: string
+          description: The text of the idea.
+          minLength: 1
+          maxLength: 5000
+        timestamp:
+          type: number
+          description: The client-side Unix timestamp (milliseconds).
+    
+    IdeaSubmissionResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        id:
+          type: string
+          format: uuid
+          description: The unique identifier assigned to the stored idea.
+        message:
+          type: string
+          example: "Idea successfully submitted."
+          
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          example: "Validation failed"
+        message:
+          type: string
+          example: "The 'idea' field is required and must not exceed 5000 characters."

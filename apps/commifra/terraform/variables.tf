@@ -49,3 +49,10 @@ variable "runner_max_count" {
   description = "Maximum number of concurrent runners"
   default     = 5
 }
+
+variable "domain_name" {
+  type        = string
+  description = "The root domain name"
+  default     = ""
+}
+

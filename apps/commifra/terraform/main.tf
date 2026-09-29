@@ -59,3 +59,11 @@ module "github_runners" {
   runner_architecture = "x86_64"
   max_count           = var.runner_max_count
 }
+
+module "route53" {
+  source = "./modules/route53"
+
+  count = var.domain_name != "" ? 1 : 0
+
+  domain_name     = var.domain_name
+}
