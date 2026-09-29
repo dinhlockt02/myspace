@@ -57,12 +57,6 @@ jobs:
       - name: Install Dependencies
         run: pnpm install
 
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-region: ap-southeast-1
-          role-to-assume: arn:aws:iam::123456789012:role/GitHubActionsRole
-
       - name: Get Infrastructure Outputs
         id: tf-outputs
         working-directory: apps/idea-collector/infra
