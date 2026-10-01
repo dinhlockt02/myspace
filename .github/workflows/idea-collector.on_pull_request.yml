@@ -24,7 +24,7 @@ jobs:
         shell: bash
         run: pnpm nx run idea-collector-infra:validate
 
-      - id: pick
+      - id: plan
         shell: bash
         run: pnpm nx run idea-collector-infra:apply
       
