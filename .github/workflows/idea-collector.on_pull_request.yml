@@ -14,7 +14,7 @@ permissions:
 
 jobs:
   apply-infra:
-    name: Terraform Apply
+    name: Terraform Plan
     runs-on: ubuntu-latest
     if: ${{ inputs.project == 'idea-collector-infra' }}
     steps:
@@ -26,5 +26,5 @@ jobs:
 
       - id: pick
         shell: bash
-        run: pnpm nx run idea-collector-infra:apply
+        run: pnpm nx run idea-collector-infra:plan
       
