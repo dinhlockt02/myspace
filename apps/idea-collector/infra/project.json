@@ -4,6 +4,14 @@
   "projectType": "library",
   "sourceRoot": "apps/idea-collector/infra",
   "targets": {
+    "init": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "terraform init",
+        "cwd": "apps/idea-collector/infra"
+      },
+      "cache": true
+    },
     "validate": {
       "executor": "nx:run-commands",
       "options": {
