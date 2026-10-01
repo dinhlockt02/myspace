@@ -17,6 +17,8 @@ jobs:
     runs-on: ubuntu-latest
     if: ${{ inputs.project == 'idea-collector-infra' }}
     steps:
+      - uses: actions/checkout@v4
+
       - uses: ./.github/actions/idea-collector/setup
 
       - id: pick
