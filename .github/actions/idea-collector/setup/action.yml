@@ -25,8 +25,11 @@ runs:
         go-version-file: ${{ inputs.backend-working-directory }}/go.mod
         cache-dependency-path: ${{ inputs.backend-working-directory }}/go.sum
 
-    - name: Setup AWS
-      uses: ./.github/actions/common/aws
+    # - name: Setup AWS
+    #   uses: ./.github/actions/common/aws
+    #   with:
+    #     role-to-assume: 
+
 
     - name: Setup Nx
       uses: ./.github/actions/common/nx

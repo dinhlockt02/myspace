@@ -4,8 +4,7 @@ description: Configure AWS credentials and region
 inputs:
   role-to-assume:
     description: "IAM Role ARN to assume (defaults to secrets.RUNNER_IAM_ROLE if configured)"
-    required: false
-    default: ""
+    required: true
   aws-region:
     description: "AWS Region"
     required: false
@@ -21,6 +20,6 @@ runs:
     - name: Assume AWS role
       uses: aws-actions/configure-aws-credentials@v4
       with:
-        role-to-assume: ${{ inputs.role-to-assume != '' && inputs.role-to-assume || secrets.RUNNER_IAM_ROLE }}
+        role-to-assume: ${{ inputs.role-to-assume }}
         aws-region: ${{ inputs.aws-region }}
         role-session-name: ${{ inputs.role-session-name }}
