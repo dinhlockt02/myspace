@@ -1,0 +1,37 @@
+name: On pull request
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+  id-token: write
+  pull-requests: write
+
+jobs:
+  detect:
+    runs-on: ubuntu-latest
+    outputs:
+      services: ${{ steps.pick.outputs.services }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # full history so Nx can diff
+
+      - uses: ./.github/actions/common/nx
+
+      - id: pick
+        shell: bash
+        run: |
+          LIST=$(pnpm nx show projects --json)
+          echo "Afftected services: $LIST"
+          echo "services=$LIST" >> "$GITHUB_OUTPUT"
+  idea-collector:
+    uses: ./.github/workflows/idea-collector.on_pull_request.yml
+    needs: detect
+    if: contains(fromJson(needs.detect.outputs.services), 'idea-collector-infra')
+    with:
+      project: 'idea-collector-infra'
+
+    

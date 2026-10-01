@@ -1,0 +1,26 @@
+name: Setup AWS
+description: Configure AWS credentials and region
+
+inputs:
+  role-to-assume:
+    description: "IAM Role ARN to assume (defaults to secrets.RUNNER_IAM_ROLE if configured)"
+    required: false
+    default: ""
+  aws-region:
+    description: "AWS Region"
+    required: false
+    default: "ap-southeast-1"
+  role-session-name:
+    description: "AWS role session name"
+    required: false
+    default: "github-actions-session"
+
+runs:
+  using: composite
+  steps:
+    - name: Assume AWS role
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        role-to-assume: ${{ inputs.role-to-assume != '' && inputs.role-to-assume || secrets.RUNNER_IAM_ROLE }}
+        aws-region: ${{ inputs.aws-region }}
+        role-session-name: ${{ inputs.role-session-name }}

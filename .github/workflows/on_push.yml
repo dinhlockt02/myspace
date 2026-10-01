@@ -28,7 +28,7 @@ jobs:
         with:
           fetch-depth: 0 # full history so Nx can diff
 
-      - uses: ./.github/actions/common/nx.yml
+      - uses: ./.github/actions/common/nx
 
       - id: pick
         shell: bash

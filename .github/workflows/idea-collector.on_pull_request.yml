@@ -1,4 +1,4 @@
-name: On push Idea Collector
+name: On pull request Idea Collector
 
 on: 
   workflow_call:
@@ -10,6 +10,7 @@ on:
 permissions:
   id-token: write
   contents: read
+  pull-requests: write
 
 jobs:
   apply-infra:
@@ -18,6 +19,10 @@ jobs:
     if: ${{ inputs.project == 'idea-collector-infra' }}
     steps:
       - uses: ./.github/actions/idea-collector/setup
+
+      - id: validate
+        shell: bash
+        run: pnpm nx run idea-collector-infra:validate
 
       - id: pick
         shell: bash

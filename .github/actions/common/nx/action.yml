@@ -1,0 +1,30 @@
+name: Setup Nx
+description: Setup Node.js, pnpm, and Nx SHAs for affected commands
+
+inputs:
+  pnpm-version:
+    description: "pnpm version to install"
+    required: false
+    default: "11"
+  node-version:
+    description: "Node.js version to install"
+    required: false
+    default: "22"
+  cache:
+    description: "Enable cache in pnpm setup"
+    required: false
+    default: "true"
+
+runs:
+  using: composite
+  steps:
+    - name: Setup pnpm and Node.js
+      uses: pnpm/setup@v1
+      with:
+        version: ${{ inputs.pnpm-version }}
+        runtime: node@${{ inputs.node-version }}
+        cache: ${{ inputs.cache }}
+
+    # Sets NX_BASE = last successful commit of this workflow on main, NX_HEAD = current commit
+    - name: Set Nx SHAs
+      uses: nrwl/nx-set-shas@v4

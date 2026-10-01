@@ -1,0 +1,16 @@
+name: Setup Idea Collector Dependencies
+description: Build Go backend Lambda binary required by Terraform infrastructure
+
+inputs:
+  working-directory:
+    description: "Working directory for idea-collector backend"
+    required: false
+    default: "apps/idea-collector/backend"
+
+runs:
+  using: composite
+  steps:
+    - name: Build backend Lambda binary
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: make build || (GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o bootstrap main.go)
