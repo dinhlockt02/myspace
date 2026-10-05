@@ -28,7 +28,7 @@ runs:
     - name: Setup AWS
       uses: ./.github/actions/common/aws
       with:
-        role-to-assume: "arn:aws:iam::486049703479:role/github-actions-myspace"
+        role-to-assume: "arn:aws:iam::486049703479:role/idea-collector-runner"
 
 
     - name: Setup Nx
