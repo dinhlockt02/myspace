@@ -21,7 +21,15 @@ jobs:
 
       - uses: ./.github/actions/idea-collector/setup
 
-      - id: pick
+      - id: init
+        shell: bash
+        run: pnpm nx run idea-collector-infra:init
+
+      - id: validate
+        shell: bash
+        run: pnpm nx run idea-collector-infra:validate
+
+      - id: apply
         shell: bash
         run: pnpm nx run idea-collector-infra:apply
       
