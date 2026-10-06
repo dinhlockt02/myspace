@@ -35,10 +35,17 @@
         "cwd": "apps/commifra/bootstrap"
       }
     },
+    "init": {
+              "executor": "nx:run-commands",
+      "options": {
+        "command": "terraform init",
+        "cwd": "apps/commifra/terraform"
+      }
+    },
     "plan": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "terraform init && terraform plan",
+        "command": "terraform plan",
         "cwd": "apps/commifra/terraform"
       },
       "dependsOn": ["lambda-build"]
