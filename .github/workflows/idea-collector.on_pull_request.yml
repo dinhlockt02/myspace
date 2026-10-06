@@ -13,18 +13,24 @@ permissions:
   pull-requests: write
 
 jobs:
-  apply-infra:
+  plan-infra:
     name: Terraform Plan
     runs-on: ubuntu-latest
     if: ${{ inputs.project == 'idea-collector-infra' }}
     steps:
+      - uses: actions/checkout@v4
+
       - uses: ./.github/actions/idea-collector/setup
+
+      - id: init
+        shell: bash
+        run: pnpm nx run idea-collector-infra:init
 
       - id: validate
         shell: bash
         run: pnpm nx run idea-collector-infra:validate
 
-      - id: pick
+      - id: plan
         shell: bash
         run: pnpm nx run idea-collector-infra:plan
       

@@ -41,7 +41,7 @@ variable "project_name" {
 # -----------------------------------------------------------------------------
 variable "bucket_name" {
   type        = string
-  default     = "idea-collector-frontend-assets"
+  default     = "idea.dinhloc.dev"
   description = "Name of the S3 bucket for hosting frontend static assets"
 }
 
