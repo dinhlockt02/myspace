@@ -1,5 +1,5 @@
-name: Setup Idea Collector
-description: Setup all tools and dependencies required for Idea Collector workflows
+name: Setup Commifra
+description: Setup all tools and dependencies required for Commifra workflows
 
 inputs:
   checkout:
@@ -10,10 +10,6 @@ inputs:
     description: "Fetch depth for git checkout"
     required: false
     default: "0"
-  backend-working-directory:
-    description: "Working directory for idea-collector backend"
-    required: false
-    default: "apps/idea-collector/backend"
   terraform-version:
     description: "Terraform version"
     required: false
@@ -36,7 +32,7 @@ runs:
     - name: Setup AWS
       uses: ./.github/actions/common/aws
       with:
-        role-to-assume: "arn:aws:iam::486049703479:role/idea-collector-runner"
+        role-to-assume: "arn:aws:iam::486049703479:role/commifra-runner"
 
     - name: Setup Nx
       uses: ./.github/actions/common/nx
