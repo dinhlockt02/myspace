@@ -1,0 +1,31 @@
+name: On pull request Idea Collector
+
+on: 
+  workflow_call:
+
+permissions:
+  id-token: write
+  contents: read
+  pull-requests: write
+
+jobs:
+  plan-infra:
+    name: Terraform Plan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/commifra/setup
+
+      - id: init
+        shell: bash
+        run: pnpm nx run commifra:init
+
+      - id: validate
+        shell: bash
+        run: pnpm nx run commifra:validate
+
+      - id: plan
+        shell: bash
+        run: pnpm nx run commifra:plan
+      
