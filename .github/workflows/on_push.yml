@@ -48,5 +48,7 @@ jobs:
     if: contains(fromJson(needs.detect.outputs.services), 'idea-collector-infra')
     with:
       project: 'idea-collector-infra'
-
-    
+  commifra:
+    uses: ./.github/workflows/commifra.on_push.yml
+    needs: detect
+    if: contains(fromJson(needs.detect.outputs.services), 'commifra')

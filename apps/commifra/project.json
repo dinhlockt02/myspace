@@ -10,8 +10,7 @@
         "command": "terraform validate",
         "cwd": "apps/commifra/terraform"
       },
-      "cache": true,
-      "dependsOn": ["lambda-build"]
+      "cache": true
     },
     "fmt": {
       "executor": "nx:run-commands",
@@ -36,7 +35,7 @@
       }
     },
     "init": {
-              "executor": "nx:run-commands",
+      "executor": "nx:run-commands",
       "options": {
         "command": "terraform init",
         "cwd": "apps/commifra/terraform"
@@ -47,16 +46,14 @@
       "options": {
         "command": "terraform plan",
         "cwd": "apps/commifra/terraform"
-      },
-      "dependsOn": ["lambda-build"]
+      }
     },
     "apply": {
       "executor": "nx:run-commands",
       "options": {
         "command": "terraform apply -auto-approve",
         "cwd": "apps/commifra/terraform"
-      },
-      "dependsOn": ["lambda-build"]
+      }
     },
     "lambda-build": {
       "executor": "nx:run-commands",
@@ -64,6 +61,14 @@
         "command": "pnpm run build",
         "cwd": "apps/commifra/terraform/modules/github-runners/lambda"
       },
+      "inputs": [
+        "{projectRoot}/terraform/modules/github-runners/lambda/src/**/*",
+        "{projectRoot}/terraform/modules/github-runners/lambda/package.json",
+        "{projectRoot}/terraform/modules/github-runners/lambda/build.mjs"
+      ],
+      "outputs": [
+        "{projectRoot}/terraform/modules/github-runners/lambda/dist"
+      ],
       "cache": true
     },
     "packer-validate": {

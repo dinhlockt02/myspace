@@ -1,4 +1,4 @@
-name: On pull request Commifra
+name: On push Commifra
 
 on: 
   workflow_call:
@@ -6,7 +6,6 @@ on:
 permissions:
   id-token: write
   contents: read
-  pull-requests: write
 
 jobs:
   build-lambda:
@@ -29,8 +28,8 @@ jobs:
           path: apps/commifra/terraform/modules/github-runners/lambda/dist
           retention-days: 1
 
-  plan-infra:
-    name: Terraform Plan
+  apply-infra:
+    name: Terraform Apply
     needs: [build-lambda]
     runs-on: ubuntu-latest
     steps:
@@ -50,6 +49,6 @@ jobs:
         shell: bash
         run: pnpm nx run commifra:validate
 
-      - id: plan
+      - id: apply
         shell: bash
-        run: pnpm nx run commifra:plan
+        run: pnpm nx run commifra:apply
