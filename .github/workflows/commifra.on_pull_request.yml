@@ -56,4 +56,4 @@ jobs:
         shell: bash
         run: pnpm nx run commifra:plan
         env:
-          TV_VAR_github_pat: ${{ secrets.GITHUB_PAT }}
+          TV_VAR_github_pat: ${{ secrets.TF_VAR_GITHUB_PAT }}
