@@ -1,0 +1,51 @@
+name: Detect Services
+description: Detect affected services and projects based on Git changes and Nx affected graph
+
+inputs:
+  services:
+    description: "Comma-separated list of services to trigger explicitly (overrides auto-detection)"
+    required: false
+    default: ""
+  all:
+    description: "Trigger all services"
+    required: false
+    default: "false"
+  base:
+    description: "Base ref or SHA for comparison"
+    required: false
+    default: ""
+  head:
+    description: "Head ref or SHA for comparison"
+    required: false
+    default: ""
+
+outputs:
+  services:
+    description: "JSON array of affected service names and projects"
+    value: ${{ steps.detect.outputs.services }}
+  has-changes:
+    description: "Boolean indicating if any service had changes"
+    value: ${{ steps.detect.outputs.has-changes }}
+  commifra:
+    description: "Boolean indicating if commifra is affected"
+    value: ${{ steps.detect.outputs.commifra }}
+  idea-collector:
+    description: "Boolean indicating if idea-collector is affected"
+    value: ${{ steps.detect.outputs.idea-collector }}
+
+runs:
+  using: composite
+  steps:
+    - id: detect
+      shell: bash
+      env:
+        INPUT_SERVICES: ${{ inputs.services }}
+        INPUT_ALL: ${{ inputs.all }}
+        INPUT_BASE: ${{ inputs.base }}
+        INPUT_HEAD: ${{ inputs.head }}
+        GITHUB_BASE_REF: ${{ github.base_ref }}
+        GITHUB_REF: ${{ github.ref }}
+        GITHUB_EVENT_NAME: ${{ github.event_name }}
+        NX_BASE: ${{ env.NX_BASE }}
+        NX_HEAD: ${{ env.NX_HEAD }}
+      run: node "${{ github.action_path }}/detect.mjs"
