@@ -44,7 +44,7 @@
     "plan": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "terraform plan",
+        "command": "terraform plan -input=false",
         "cwd": "apps/commifra/terraform"
       }
     },
