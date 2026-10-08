@@ -7,11 +7,13 @@ variable "region" {
 variable "github_owner" {
   type        = string
   description = "GitHub repository owner"
+  default = "dinhlockt02@20945393"
 }
 
 variable "github_repo" {
   type        = string
   description = "GitHub repository name"
+  default = "myspace@1373158525"
 }
 
 variable "github_pat" {
@@ -53,6 +55,6 @@ variable "runner_max_count" {
 variable "domain_name" {
   type        = string
   description = "The root domain name"
-  default     = ""
+  default     = "dinhloc.dev"
 }
 
