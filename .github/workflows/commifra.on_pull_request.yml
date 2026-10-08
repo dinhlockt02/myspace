@@ -34,6 +34,8 @@ jobs:
     needs: [build-lambda]
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
+
       - uses: ./.github/actions/commifra/setup
 
       - name: Download Lambda Dist Artifact
