@@ -22,7 +22,7 @@ jobs:
   detect:
     runs-on: ubuntu-latest
     outputs:
-      services: ${{ steps.pick.outputs.services }}
+      services: ${{ steps.detect.outputs.services }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -30,23 +30,18 @@ jobs:
 
       - uses: ./.github/actions/common/nx
 
-      - id: pick
-        shell: bash
-        run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.all }}" = "true" ]; then
-            LIST=$(pnpm nx show projects --json)
-          elif [ -n "${{ inputs.services }}" ]; then
-            LIST=$(echo "${{ inputs.services }}" | jq -Rc 'split(",") | map(gsub("^\\s+|\\s+$";"")) | map(select(length>0))')
-          else
-            LIST=$(pnpm nx show projects --affected --json)
-          fi
-          echo "Afftected services: $LIST"
-          echo "services=$LIST" >> "$GITHUB_OUTPUT"
+      - id: detect
+        uses: ./.github/actions/common/detect
+        with:
+          services: ${{ inputs.services }}
+          all: ${{ inputs.all }}
   idea-collector:
     uses: ./.github/workflows/idea-collector.on_push.yml
     needs: detect
     if: contains(fromJson(needs.detect.outputs.services), 'idea-collector-infra')
     with:
       project: 'idea-collector-infra'
-
-    
+  commifra:
+    uses: ./.github/workflows/commifra.on_push.yml
+    needs: detect
+    if: contains(fromJson(needs.detect.outputs.services), 'commifra')

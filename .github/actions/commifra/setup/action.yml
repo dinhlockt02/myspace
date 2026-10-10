@@ -1,0 +1,38 @@
+name: Setup Commifra
+description: Setup all tools and dependencies required for Commifra workflows
+
+inputs:
+  checkout:
+    description: "Whether to checkout the repository"
+    required: false
+    default: "true"
+  fetch-depth:
+    description: "Fetch depth for git checkout"
+    required: false
+    default: "0"
+  terraform-version:
+    description: "Terraform version"
+    required: false
+    default: "1.9.0"
+
+runs:
+  using: composite
+  steps:
+    - name: Checkout repository
+      if: ${{ inputs.checkout == 'true' }}
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: ${{ inputs.fetch-depth }}
+
+    - name: Setup Terraform
+      uses: ./.github/actions/common/terraform
+      with:
+        terraform-version: ${{ inputs.terraform-version }}
+
+    - name: Setup AWS
+      uses: ./.github/actions/common/aws
+      with:
+        role-to-assume: "arn:aws:iam::486049703479:role/commifra-runner"
+
+    - name: Setup Nx
+      uses: ./.github/actions/common/nx

@@ -1,0 +1,59 @@
+name: On pull request Commifra
+
+on: 
+  workflow_call:
+
+permissions:
+  id-token: write
+  contents: read
+  pull-requests: write
+
+jobs:
+  build-lambda:
+    name: Build Lambda
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/common/nx
+
+      - name: Build Lambda with Cache
+        uses: ./.github/actions/commifra/build-lambda
+
+      - name: Upload Lambda Dist Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: commifra-lambda-dist
+          path: apps/commifra/terraform/modules/github-runners/lambda/dist
+          retention-days: 1
+
+  plan-infra:
+    name: Terraform Plan
+    needs: [build-lambda]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/commifra/setup
+
+      - name: Download Lambda Dist Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: commifra-lambda-dist
+          path: apps/commifra/terraform/modules/github-runners/lambda/dist
+
+      - id: init
+        shell: bash
+        run: pnpm nx run commifra:init
+
+      - id: validate
+        shell: bash
+        run: pnpm nx run commifra:validate
+
+      - id: plan
+        shell: bash
+        run: pnpm nx run commifra:plan
+        env:
+          TF_VAR_github_pat: ${{ secrets.TF_VAR_GITHUB_PAT }}

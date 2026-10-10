@@ -13,7 +13,7 @@ jobs:
   detect:
     runs-on: ubuntu-latest
     outputs:
-      services: ${{ steps.pick.outputs.services }}
+      services: ${{ steps.detect.outputs.services }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -21,17 +21,18 @@ jobs:
 
       - uses: ./.github/actions/common/nx
 
-      - id: pick
-        shell: bash
-        run: |
-          LIST=$(pnpm nx show projects --json)
-          echo "Afftected services: $LIST"
-          echo "services=$LIST" >> "$GITHUB_OUTPUT"
+      - id: detect
+        uses: ./.github/actions/common/detect
   idea-collector:
     uses: ./.github/workflows/idea-collector.on_pull_request.yml
     needs: detect
     if: contains(fromJson(needs.detect.outputs.services), 'idea-collector-infra')
     with:
       project: 'idea-collector-infra'
+  commifra:
+    uses: ./.github/workflows/commifra.on_pull_request.yml
+    needs: detect
+    if: contains(fromJson(needs.detect.outputs.services), 'commifra')
+  
 
     

@@ -1,0 +1,28 @@
+name: Build Commifra Lambda
+description: Build Commifra GitHub Runners Lambda functions with caching
+
+inputs:
+  lambda-path:
+    description: "Relative path to lambda directory"
+    required: false
+    default: "apps/commifra/terraform/modules/github-runners/lambda"
+
+runs:
+  using: composite
+  steps:
+    - name: Cache Lambda build output
+      id: lambda-cache
+      uses: actions/cache@v4
+      with:
+        path: ${{ inputs.lambda-path }}/dist
+        key: commifra-lambda-${{ runner.os }}-${{ hashFiles(format('{0}/src/**', inputs.lambda-path), format('{0}/package.json', inputs.lambda-path), format('{0}/build.mjs', inputs.lambda-path), 'pnpm-lock.yaml') }}
+
+    - name: Install dependencies
+      if: steps.lambda-cache.outputs.cache-hit != 'true'
+      shell: bash
+      run: pnpm install --frozen-lockfile
+
+    - name: Build Lambda
+      if: steps.lambda-cache.outputs.cache-hit != 'true'
+      shell: bash
+      run: pnpm nx run commifra:lambda-build
