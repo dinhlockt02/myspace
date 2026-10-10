@@ -193,9 +193,3 @@ resource "aws_apigatewayv2_route" "post_ideas" {
   route_key = "POST /api/ideas"
   target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
 }
-
-resource "aws_apigatewayv2_stage" "default" {
-  api_id      = aws_apigatewayv2_api.ingestion.id
-  name        = "$default"
-  auto_deploy = true
-}
