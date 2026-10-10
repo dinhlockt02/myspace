@@ -33,6 +33,8 @@ jobs:
     needs: [build-lambda]
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
+
       - uses: ./.github/actions/commifra/setup
 
       - name: Download Lambda Dist Artifact
@@ -52,3 +54,5 @@ jobs:
       - id: apply
         shell: bash
         run: pnpm nx run commifra:apply
+        env:
+          TF_VAR_github_pat: ${{ secrets.TF_VAR_GITHUB_PAT }}
