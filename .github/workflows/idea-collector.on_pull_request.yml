@@ -5,7 +5,12 @@ on:
     inputs:
       project:
         type: string
-        required: true
+        required: false
+        default: 'idea-collector'
+      plan_infra:
+        type: boolean
+        required: false
+        default: true
 
 permissions:
   id-token: write
@@ -13,10 +18,31 @@ permissions:
   pull-requests: write
 
 jobs:
+  check-frontend:
+    name: Frontend Lint & Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Nx
+        uses: ./.github/actions/common/nx
+
+      - name: Install dependencies
+        shell: bash
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint Frontend
+        shell: bash
+        run: pnpm nx run idea-collector-frontend:lint
+
+      - name: Build Frontend
+        shell: bash
+        run: pnpm nx run idea-collector-frontend:build
+
   plan-infra:
     name: Terraform Plan
     runs-on: ubuntu-latest
-    if: ${{ inputs.project == 'idea-collector-infra' }}
+    if: ${{ inputs.plan_infra == true && (inputs.project == 'idea-collector-infra' || inputs.project == 'idea-collector') }}
     steps:
       - uses: actions/checkout@v4
 
@@ -33,4 +59,3 @@ jobs:
       - id: plan
         shell: bash
         run: pnpm nx run idea-collector-infra:plan
-      

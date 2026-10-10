@@ -1,71 +1,37 @@
-name: On push Idea Collector
+name: Deploy Idea Collector Frontend
 
-on: 
-  workflow_call:
-    inputs:
-      project:
-        type: string
-        required: false
-        default: 'idea-collector'
-      deploy_infra:
-        type: boolean
-        required: false
-        default: true
-      deploy_frontend:
-        type: boolean
-        required: false
-        default: true
+on:
   workflow_dispatch:
     inputs:
-      deploy_infra:
-        description: "Deploy Terraform infrastructure"
-        type: boolean
-        default: true
-      deploy_frontend:
-        description: "Deploy frontend to CloudFront/S3"
-        type: boolean
-        default: true
+      s3_bucket:
+        description: "S3 Bucket Name (default: idea.dinhloc.dev)"
+        required: false
+        default: "idea.dinhloc.dev"
+      cloudfront_distribution_id:
+        description: "CloudFront Distribution ID (leave blank to auto-discover)"
+        required: false
+        default: ""
+  workflow_call:
+    inputs:
+      s3_bucket:
+        description: "S3 Bucket Name (default: idea.dinhloc.dev)"
+        type: string
+        required: false
+        default: "idea.dinhloc.dev"
+      cloudfront_distribution_id:
+        description: "CloudFront Distribution ID (leave blank to auto-discover)"
+        type: string
+        required: false
+        default: ""
 
 permissions:
   id-token: write
   contents: read
 
 jobs:
-  apply-infra:
-    name: Terraform Apply
-    runs-on: ubuntu-latest
-    if: ${{ inputs.deploy_infra != false }}
-    outputs:
-      s3_bucket_name: ${{ steps.outputs.outputs.s3_bucket_name }}
-      cloudfront_distribution_id: ${{ steps.outputs.outputs.cloudfront_distribution_id }}
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: ./.github/actions/idea-collector/setup
-
-      - id: init
-        shell: bash
-        run: pnpm nx run idea-collector-infra:init
-
-      - id: validate
-        shell: bash
-        run: pnpm nx run idea-collector-infra:validate
-
-      - id: apply
-        shell: bash
-        run: pnpm nx run idea-collector-infra:apply
-
-      - id: outputs
-        shell: bash
-        run: |
-          echo "s3_bucket_name=$(terraform -chdir=apps/idea-collector/infra output -raw s3_bucket_name)" >> $GITHUB_OUTPUT
-          echo "cloudfront_distribution_id=$(terraform -chdir=apps/idea-collector/infra output -raw cloudfront_distribution_id)" >> $GITHUB_OUTPUT
-
   deploy-frontend:
     name: Deploy Frontend to CloudFront
-    needs: [apply-infra]
     runs-on: ubuntu-latest
-    if: always() && (needs.apply-infra.result == 'success' || needs.apply-infra.result == 'skipped') && (inputs.deploy_frontend != false)
     steps:
       - uses: actions/checkout@v4
 
@@ -85,11 +51,11 @@ jobs:
         id: resolve
         shell: bash
         env:
-          INFRA_S3_BUCKET: ${{ needs.apply-infra.outputs.s3_bucket_name }}
-          INFRA_CLOUDFRONT_DIST_ID: ${{ needs.apply-infra.outputs.cloudfront_distribution_id }}
+          INPUT_S3_BUCKET: ${{ inputs.s3_bucket }}
+          INPUT_CLOUDFRONT_DIST_ID: ${{ inputs.cloudfront_distribution_id }}
         run: |
-          S3_BUCKET="${INFRA_S3_BUCKET}"
-          CLOUDFRONT_DIST_ID="${INFRA_CLOUDFRONT_DIST_ID}"
+          S3_BUCKET="${INPUT_S3_BUCKET}"
+          CLOUDFRONT_DIST_ID="${INPUT_CLOUDFRONT_DIST_ID}"
 
           if [ -z "$S3_BUCKET" ] || [ "$S3_BUCKET" = "null" ]; then
             S3_BUCKET="idea.dinhloc.dev"

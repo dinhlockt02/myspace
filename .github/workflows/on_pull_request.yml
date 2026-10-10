@@ -26,9 +26,10 @@ jobs:
   idea-collector:
     uses: ./.github/workflows/idea-collector.on_pull_request.yml
     needs: detect
-    if: contains(fromJson(needs.detect.outputs.services), 'idea-collector-infra')
+    if: contains(fromJson(needs.detect.outputs.services), 'idea-collector') || contains(fromJson(needs.detect.outputs.services), 'idea-collector-infra') || contains(fromJson(needs.detect.outputs.services), 'idea-collector-frontend')
     with:
-      project: 'idea-collector-infra'
+      project: 'idea-collector'
+      plan_infra: ${{ contains(fromJson(needs.detect.outputs.services), 'idea-collector-infra') }}
   commifra:
     uses: ./.github/workflows/commifra.on_pull_request.yml
     needs: detect

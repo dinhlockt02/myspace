@@ -156,9 +156,16 @@ function main() {
 
   function addServiceWithVariants(serviceName) {
     targetSet.add(serviceName);
-    if (serviceName === 'idea-collector' || serviceName === 'idea-collector-infra') {
+    if (serviceName === 'idea-collector') {
       targetSet.add('idea-collector');
       targetSet.add('idea-collector-infra');
+      targetSet.add('idea-collector-frontend');
+    } else if (serviceName === 'idea-collector-infra') {
+      targetSet.add('idea-collector');
+      targetSet.add('idea-collector-infra');
+    } else if (serviceName === 'idea-collector-frontend') {
+      targetSet.add('idea-collector');
+      targetSet.add('idea-collector-frontend');
     }
     if (serviceName === 'commifra') {
       targetSet.add('commifra');
@@ -212,14 +219,38 @@ function main() {
       for (const p of allProjects) targetSet.add(p);
     } else {
       for (const file of changedFiles) {
-        for (const s of availableServices) {
-          if (
-            file.startsWith(`apps/${s}/`) ||
-            file.startsWith(`.github/actions/${s}/`) ||
-            file.startsWith(`.github/workflows/${s}.`)
-          ) {
-            addServiceWithVariants(s);
-          }
+        // Specific checks for idea-collector sub-projects
+        if (
+          file.startsWith('apps/idea-collector/infra/') ||
+          file.startsWith('apps/idea-collector/backend/') ||
+          file.startsWith('.github/actions/idea-collector/dependencies') ||
+          file.startsWith('.github/actions/idea-collector/setup')
+        ) {
+          targetSet.add('idea-collector');
+          targetSet.add('idea-collector-infra');
+        } else if (
+          file.startsWith('apps/idea-collector/frontend/') ||
+          file.startsWith('.github/workflows/idea-collector.deploy-frontend.yml')
+        ) {
+          targetSet.add('idea-collector');
+          targetSet.add('idea-collector-frontend');
+        } else if (
+          file.startsWith('apps/idea-collector/') ||
+          file.startsWith('.github/actions/idea-collector/') ||
+          file.startsWith('.github/workflows/idea-collector.')
+        ) {
+          targetSet.add('idea-collector');
+          targetSet.add('idea-collector-infra');
+          targetSet.add('idea-collector-frontend');
+        }
+
+        // Commifra specific paths
+        if (
+          file.startsWith('apps/commifra/') ||
+          file.startsWith('.github/actions/commifra/') ||
+          file.startsWith('.github/workflows/commifra.')
+        ) {
+          targetSet.add('commifra');
         }
       }
 
@@ -230,7 +261,7 @@ function main() {
         const root = projectRoots[proj] || '';
         for (const s of availableServices) {
           if (root.startsWith(`apps/${s}`)) {
-            addServiceWithVariants(s);
+            targetSet.add(s);
           }
         }
       }
@@ -242,7 +273,9 @@ function main() {
   const hasChanges = resultList.length > 0;
   const isCommifra = resultList.includes('commifra');
   const isIdeaCollector =
-    resultList.includes('idea-collector') || resultList.includes('idea-collector-infra');
+    resultList.includes('idea-collector') ||
+    resultList.includes('idea-collector-infra') ||
+    resultList.includes('idea-collector-frontend');
 
   console.log('\n==================================================');
   console.log(`Detection Mode : ${detectionMode}`);
