@@ -15,7 +15,7 @@ function App() {
       await fetch(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ idea, timestamp: new Date().toISOString() }),
+        body: JSON.stringify({ idea, timestamp: Date.now() }),
       })
       setStatus('success')
       setIdea('')
