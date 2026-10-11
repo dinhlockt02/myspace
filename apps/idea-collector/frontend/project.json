@@ -17,7 +17,10 @@
         "command": "pnpm run build",
         "cwd": "apps/idea-collector/frontend"
       },
-      "outputs": ["{projectRoot}/dist"]
+      "outputs": ["{projectRoot}/dist"],
+      "inputs": [
+        {"env": "VITE_API_URL"}
+      ]
     },
     "preview": {
       "executor": "nx:run-commands",
