@@ -1,0 +1,110 @@
+# CLI Schema: scripts/pr-workflow.sh
+name: pr-workflow.sh
+description: Core CLI utility for Pull Request creation, synchronization, status, and pre-flight checks.
+usage: ./scripts/pr-workflow.sh [COMMAND] [OPTIONS]
+
+commands:
+  create:
+    description: Create a new GitHub Pull Request from the current branch
+    aliases: [new, open, create-mr]
+    options:
+      --draft:
+        type: boolean
+        default: true
+        description: Open the Pull Request as a Draft (default)
+      --ready:
+        type: boolean
+        default: false
+        description: Open the Pull Request as Ready for Review
+      --base <branch>:
+        type: string
+        default: main
+        description: Target base branch for integration
+      --title <title>:
+        type: string
+        optional: true
+        description: Custom PR title (defaults to auto-generated title)
+      --json:
+        type: boolean
+        default: false
+        description: Output machine-readable JSON payload
+
+  update:
+    description: Refresh description, task checklist, and metadata on an existing PR
+    aliases: [sync, refresh, update-mr]
+    options:
+      --base <branch>:
+        type: string
+        default: main
+        description: Base branch for diff comparison
+      --notes <text>:
+        type: string
+        optional: true
+        description: Additional reviewer notes or highlights to include
+      --json:
+        type: boolean
+        default: false
+        description: Output machine-readable JSON payload
+
+  status:
+    description: Inspect current Pull Request state, GitHub Actions checks, and merge readiness
+    aliases: [checks, info]
+    options:
+      --json:
+        type: boolean
+        default: false
+        description: Output machine-readable JSON payload
+
+  check:
+    description: Run local pre-flight quality gates (git clean, lint, test, secrets) without remote mutations
+    aliases: [verify, pre-flight]
+    options:
+      --json:
+        type: boolean
+        default: false
+        description: Output machine-readable JSON payload
+
+exit_codes:
+  0: SUCCESS (operation completed successfully)
+  1: PREFLIGHT_ERROR (git dirty, lint/test failure, or secret detected)
+  2: AUTH_ERROR (neither gh CLI authenticated nor GITHUB_TOKEN provided)
+  3: REMOTE_ERROR (git push or network failure)
+  4: GITHUB_API_ERROR (GitHub API error or PR creation failed)
+  5: SPEC_ERROR (feature specification or tasks not found)
+
+json_output_schema:
+  type: object
+  properties:
+    status:
+      type: string
+      enum: [success, error]
+    action:
+      type: string
+      enum: [created, updated, status, checked]
+    pr_number:
+      type: integer
+    pr_url:
+      type: string
+    is_draft:
+      type: boolean
+    head_branch:
+      type: string
+    base_branch:
+      type: string
+    affected_projects:
+      type: array
+      items:
+        type: string
+    quality_gates:
+      type: object
+      properties:
+        git_clean:
+          type: boolean
+        lint:
+          type: boolean
+        test:
+          type: boolean
+        secrets_clear:
+          type: boolean
+    error:
+      type: string

@@ -113,8 +113,12 @@ check_host_prerequisites() {
             docker_ok=true # Accept existing modern docker versions if parse is non-semver
         fi
 
+        local docker_err
+        docker_err=$(docker info 2>&1 || true)
         if docker info >/dev/null 2>&1; then
             docker_daemon=true
+        elif echo "$docker_err" | grep -qi "permission denied"; then
+            remediation+=("Docker daemon is running, but permission to /var/run/docker.sock was denied. Run: 'sudo chmod 666 /var/run/docker.sock' or re-login for 'docker' group permissions to apply.")
         else
             remediation+=("Docker daemon is inactive. Start Docker Desktop or run: 'sudo systemctl start docker'")
         fi

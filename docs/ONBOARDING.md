@@ -81,7 +81,7 @@ pnpm run setup -- --bootstrap
 # Provision and health-check local backing service containers only
 pnpm run setup -- --containers
 
-# Audit all 10 Spec-Kit skills and repository governance rules
+# Audit all 11 Spec-Kit skills and repository governance rules
 pnpm run setup -- --verify-skills
 
 # Run full end-to-end smoke test across all workspace applications
@@ -158,6 +158,7 @@ The repository operates an autonomous, AI-native SDLC pipeline. All skills are l
 | `/speckit-implement` | Autonomously execute and check off tasks defined in `tasks.md` |
 | `/speckit-converge` | Validate codebase against specification and append remaining work |
 | `/speckit-analyze` | Cross-artifact consistency and quality analysis |
+| `/speckit-pr` | Post-implementation Pull Request creation, synchronization, status, and pre-flight quality checks |
 
 ### Governance Rules
 - [`AGENTS.md`](file:///home/loctran/code/myspace/AGENTS.md): Repository structure, AI constraints, CI/CD, and infra conventions.

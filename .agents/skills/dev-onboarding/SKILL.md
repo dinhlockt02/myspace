@@ -40,7 +40,7 @@ The `/dev-onboarding` skill provides an interactive, conversational companion fo
 
 3. **AI-Native SDLC Suite Audit**:
    - Execute `bash scripts/setup-dev.sh --verify-skills --json`
-   - Audit all 10 Spec-Kit skills and governance rules in `AGENTS.md` and `.specify/memory/constitution.md`.
+   - Audit all 11 Spec-Kit skills (including post-implementation `/speckit-pr`) and governance rules in `AGENTS.md` and `.specify/memory/constitution.md`.
    - Report active capabilities to the developer.
 
 4. **Smoke Test & Verification**:
