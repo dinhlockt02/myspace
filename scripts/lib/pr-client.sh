@@ -82,6 +82,8 @@ create_github_pr() {
     if ! check_github_auth; then
         if ! $is_json; then
             log_error "GitHub authentication missing. Either login via 'gh auth login' or export 'GITHUB_TOKEN'."
+        else
+            printf '{"status":"error","error":"GitHub authentication missing. Either login via gh auth login or export GITHUB_TOKEN"}\n'
         fi
         return 2
     fi
