@@ -6,6 +6,7 @@
     "apps/idea-collector/frontend"
   ],
   "scripts": {
+    "setup": "bash scripts/setup-dev.sh",
     "nx": "nx",
     "build": "nx run-many -t build",
     "test": "nx run-many -t test",

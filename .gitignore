@@ -41,3 +41,4 @@ main
 *.log
 .cache/
 .tmp/
+.specify/reports/

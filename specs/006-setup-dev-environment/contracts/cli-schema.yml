@@ -1,0 +1,42 @@
+# Command Line Interface Contract: Developer Onboarding Tool
+# Entry points: ./scripts/setup-dev.sh or pnpm run setup [-- <options>]
+
+name: setup-dev
+description: "Repository developer onboarding and environment bootstrap tool"
+
+options:
+  --check-only:
+    type: boolean
+    description: "Run prerequisite and environment diagnostics only; perform no installations or modifications"
+    default: false
+  --bootstrap:
+    type: boolean
+    description: "Install all monorepo dependencies and generate .env files from templates"
+    default: false
+  --containers:
+    type: boolean
+    description: "Start and healthcheck local backing service containers (e.g., DynamoDB Local)"
+    default: false
+  --verify:
+    type: boolean
+    description: "Run verification smoke tests across all monorepo applications"
+    default: false
+  --clean:
+    type: boolean
+    description: "Purge existing node_modules, build artifacts, and container volumes before setup"
+    default: false
+  --json:
+    type: boolean
+    description: "Output machine-readable JSON payload to stdout (for AI agent parsing)"
+    default: false
+  --help:
+    type: boolean
+    description: "Show usage information and option flags"
+
+exit_codes:
+  0: "SUCCESS - All requested operations completed successfully"
+  1: "PREREQUISITE_ERROR - Missing or incompatible host prerequisite (Node, pnpm, Go, Docker)"
+  2: "BOOTSTRAP_ERROR - Dependency installation or template generation failed"
+  3: "CONTAINER_ERROR - Docker daemon unreachable or container failed to start/healthcheck"
+  4: "SKILL_ERROR - One or more repository AI skills or governance rules failed audit"
+  5: "VERIFY_ERROR - Workspace smoke test failed (compilation, lint, or test failure)"
