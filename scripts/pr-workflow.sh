@@ -181,6 +181,32 @@ run_pr_workflow() {
         fi
     fi
 
+    # If purely checking local quality gates, execute and exit
+    if [ "$CMD" = "check" ]; then
+        run_preflight_gates "$FLAG_JSON"
+        return $?
+    fi
+
+    # Require GitHub CLI (gh) and authentication before running PR workflows
+    if ! check_github_auth; then
+        if ! command -v gh >/dev/null 2>&1; then
+            if $FLAG_JSON; then
+                printf '{"status":"error","error":"GitHub CLI (gh) is not installed. Please install gh (https://cli.github.com/) before running PR workflows."}\n'
+            else
+                log_error "GitHub CLI ('gh') is not installed."
+                printf "  • Please install gh from https://cli.github.com/ before running PR workflows.\n\n"
+            fi
+        else
+            if $FLAG_JSON; then
+                printf '{"status":"error","error":"GitHub CLI is not authenticated. Please run \\"gh auth login\\" before running PR workflows."}\n'
+            else
+                log_error "GitHub CLI ('gh') is not authenticated."
+                printf "  • Please run 'gh auth login' to authenticate with your GitHub account before running PR workflows.\n\n"
+            fi
+        fi
+        exit 2
+    fi
+
     # Auto-detect command if none specified
     if [ -z "$CMD" ]; then
         if check_existing_pr "$branch" "$BASE_BRANCH"; then
@@ -191,9 +217,6 @@ run_pr_workflow() {
     fi
 
     case "$CMD" in
-        check)
-            run_preflight_gates "$FLAG_JSON"
-            ;;
         create)
             # 1. Run pre-flight gates
             run_preflight_gates "$FLAG_JSON" || exit 1

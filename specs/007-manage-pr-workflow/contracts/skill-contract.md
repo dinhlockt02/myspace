@@ -42,18 +42,23 @@ sequenceDiagram
     participant GitHub as GitHub API / gh CLI
 
     Dev->>Skill: /speckit-pr [args]
-    Skill->>CLI: bash scripts/pr-workflow.sh [command] --json
-    CLI->>Git: Run pre-flight checks (clean, lint, test, secrets)
-    alt Quality Gates Fail
-        Git-->>CLI: Gate failure details
-        CLI-->>Skill: Exit code 1 (JSON failure report)
-        Skill-->>Dev: Present failure details & remediation advice
-    else Quality Gates Pass
-        Git-->>CLI: Gates OK, push branch to origin
-        CLI->>GitHub: Query existing PR or create/edit PR
-        GitHub-->>CLI: PR metadata (URL, number, draft status)
-        CLI-->>Skill: Exit code 0 (JSON success report)
-        Skill-->>Dev: Conversational summary with clickable links
+    Note over Skill,GitHub: Verify gh installed & authenticated
+    alt gh Missing or Unauthenticated
+        Skill-->>Dev: Halt early: Prompt "gh auth login"
+    else gh Authenticated
+        Skill->>CLI: bash scripts/pr-workflow.sh [command] --json
+        CLI->>Git: Run pre-flight checks (clean, lint, test, secrets)
+        alt Quality Gates Fail
+            Git-->>CLI: Gate failure details
+            CLI-->>Skill: Exit code 1 (JSON failure report)
+            Skill-->>Dev: Present failure details & remediation advice
+        else Quality Gates Pass
+            Git-->>CLI: Gates OK, push branch to origin
+            CLI->>GitHub: Query existing PR or create/edit PR
+            GitHub-->>CLI: PR metadata (URL, number, draft status)
+            CLI-->>Skill: Exit code 0 (JSON success report)
+            Skill-->>Dev: Conversational summary with clickable links
+        end
     end
 ```
 

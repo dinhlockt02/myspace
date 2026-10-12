@@ -25,6 +25,7 @@ Before beginning, ensure your workstation meets the following minimum tool versi
 | **Go** | `>= 1.22.0` | [go.dev/dl](https://go.dev/dl/) or via package manager (`brew install go`, `apt install golang`) |
 | **Docker Engine** | `>= 24.0.0` | [docs.docker.com/engine/install/](https://docs.docker.com/engine/install/) or Docker Desktop |
 | **Docker Compose** | `>= 2.20.0` | Included with modern Docker CLI (`docker compose`) |
+| **GitHub CLI (`gh`)** | `>= 2.0.0` | [cli.github.com](https://cli.github.com/) or via package manager (`brew install gh`, `apt install gh`) |
 
 Supported operating systems: **Linux** (Ubuntu, Debian, Fedora, Arch), **macOS** (Apple Silicon & Intel), and **Windows WSL2**.
 

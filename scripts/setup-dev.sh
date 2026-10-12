@@ -14,6 +14,9 @@ fi
 if ! command -v go >/dev/null 2>&1 && [ -d "/usr/local/go/bin" ]; then
     export PATH="$PATH:/usr/local/go/bin"
 fi
+if [ -d "$HOME/.local/bin" ]; then
+    export PATH="$HOME/.local/bin:$PATH"
+fi
 
 # Source helper modules
 source "${SCRIPT_DIR}/lib/reporter.sh"
