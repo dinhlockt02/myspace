@@ -1,0 +1,103 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "OnboardingDiagnosticReport",
+  "type": "object",
+  "required": [
+    "id",
+    "timestamp",
+    "mode",
+    "overall_status",
+    "profile",
+    "containers",
+    "skills",
+    "smoke_test_results",
+    "remediation_steps"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "Unique identifier for this diagnostic run"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 execution timestamp"
+    },
+    "mode": {
+      "type": "string",
+      "enum": ["check-only", "full-setup", "verify-only"]
+    },
+    "overall_status": {
+      "type": "string",
+      "enum": ["passed", "failed", "warning"]
+    },
+    "profile": {
+      "type": "object",
+      "required": ["os_type", "node_version", "pnpm_version", "go_version", "docker_version", "is_compatible"],
+      "properties": {
+        "os_type": { "type": "string" },
+        "os_version": { "type": "string" },
+        "shell": { "type": "string" },
+        "node_version": { "type": "string" },
+        "pnpm_version": { "type": "string" },
+        "go_version": { "type": "string" },
+        "docker_version": { "type": "string" },
+        "compose_version": { "type": "string" },
+        "docker_daemon_active": { "type": "boolean" },
+        "is_compatible": { "type": "boolean" }
+      }
+    },
+    "containers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["service_name", "status", "health_status", "endpoint_url"],
+        "properties": {
+          "service_name": { "type": "string" },
+          "container_id": { "type": "string" },
+          "status": { "type": "string", "enum": ["running", "stopped", "exited", "missing"] },
+          "health_status": { "type": "string", "enum": ["healthy", "unhealthy", "starting", "none"] },
+          "endpoint_url": { "type": "string" }
+        }
+      }
+    },
+    "skills": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["skill_name", "skill_path", "manifest_valid", "status"],
+        "properties": {
+          "skill_name": { "type": "string" },
+          "skill_path": { "type": "string" },
+          "manifest_valid": { "type": "boolean" },
+          "status": { "type": "string", "enum": ["operational", "degraded", "missing"] },
+          "error_message": { "type": "string" }
+        }
+      }
+    },
+    "smoke_test_results": {
+      "type": "object",
+      "required": ["passed", "projects"],
+      "properties": {
+        "passed": { "type": "boolean" },
+        "projects": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "build": { "type": "string", "enum": ["passed", "failed", "skipped"] },
+              "test": { "type": "string", "enum": ["passed", "failed", "skipped"] },
+              "lint": { "type": "string", "enum": ["passed", "failed", "skipped"] }
+            }
+          }
+        }
+      }
+    },
+    "remediation_steps": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  }
+}
