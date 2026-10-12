@@ -55,12 +55,15 @@ check_host_prerequisites() {
     local docker_ver="missing"
     local compose_ver="missing"
     local docker_daemon=false
+    local gh_ver="missing"
 
     local node_ok=false
     local pnpm_ok=false
     local go_ok=false
     local docker_ok=false
     local compose_ok=false
+    local gh_ok=false
+    local gh_auth=false
 
     local remediation=()
 
@@ -113,8 +116,12 @@ check_host_prerequisites() {
             docker_ok=true # Accept existing modern docker versions if parse is non-semver
         fi
 
+        local docker_err
+        docker_err=$(docker info 2>&1 || true)
         if docker info >/dev/null 2>&1; then
             docker_daemon=true
+        elif echo "$docker_err" | grep -qi "permission denied"; then
+            remediation+=("Docker daemon is running, but permission to /var/run/docker.sock was denied. Run: 'sudo chmod 666 /var/run/docker.sock' or re-login for 'docker' group permissions to apply.")
         else
             remediation+=("Docker daemon is inactive. Start Docker Desktop or run: 'sudo systemctl start docker'")
         fi
@@ -142,9 +149,29 @@ check_host_prerequisites() {
         remediation+=("Docker Compose is missing. Ensure docker compose v2 plugin is installed.")
     fi
 
+    # 6. GitHub CLI check (>= 2.0.0)
+    if command -v gh >/dev/null 2>&1; then
+        local raw_gh
+        raw_gh=$(gh --version 2>/dev/null | head -n 1 | awk '{print $3}')
+        gh_ver="${raw_gh:-present}"
+        if semver_gte "$gh_ver" "2.0.0"; then
+            gh_ok=true
+        else
+            remediation+=("GitHub CLI ($gh_ver) is outdated. Minimum required: >= 2.0.0. Update from https://cli.github.com/")
+        fi
+
+        if gh auth status >/dev/null 2>&1; then
+            gh_auth=true
+        else
+            remediation+=("GitHub CLI is not logged in. Run 'gh auth login' to authenticate with GitHub before running PR workflows.")
+        fi
+    else
+        remediation+=("GitHub CLI ('gh') is not installed. Required for PR workflows. Install from https://cli.github.com/ or via package manager.")
+    fi
+
     # Composite verdict
     local is_compatible=false
-    if $node_ok && $pnpm_ok && $go_ok && $docker_ok && $compose_ok && $docker_daemon; then
+    if $node_ok && $pnpm_ok && $go_ok && $docker_ok && $compose_ok && $docker_daemon && $gh_ok; then
         is_compatible=true
     fi
 
@@ -158,6 +185,8 @@ check_host_prerequisites() {
     PROFILE_DOCKER="$docker_ver"
     PROFILE_COMPOSE="$compose_ver"
     PROFILE_DAEMON="$docker_daemon"
+    PROFILE_GH="$gh_ver"
+    PROFILE_GH_AUTH="$gh_auth"
     PROFILE_COMPATIBLE="$is_compatible"
     PROFILE_REMEDIATION=("${remediation[@]}")
 
@@ -172,6 +201,7 @@ check_host_prerequisites() {
         printf "  Docker Engine:    %-12s [%s]\n" "$docker_ver" "$( $docker_ok && printf "${COLOR_GREEN}PASS${COLOR_RESET}" || printf "${COLOR_RED}FAIL${COLOR_RESET}" )"
         printf "  Docker Compose:   %-12s [%s]\n" "$compose_ver" "$( $compose_ok && printf "${COLOR_GREEN}PASS${COLOR_RESET}" || printf "${COLOR_RED}FAIL${COLOR_RESET}" )"
         printf "  Docker Daemon:    %-12s [%s]\n" "$( $docker_daemon && echo "active" || echo "inactive" )" "$( $docker_daemon && printf "${COLOR_GREEN}PASS${COLOR_RESET}" || printf "${COLOR_RED}FAIL${COLOR_RESET}" )"
+        printf "  GitHub CLI (gh):  %-12s [%s] (Auth: %s)\n" "$gh_ver" "$( $gh_ok && printf "${COLOR_GREEN}PASS${COLOR_RESET}" || printf "${COLOR_RED}FAIL${COLOR_RESET}" )" "$( $gh_auth && printf "${COLOR_GREEN}logged in${COLOR_RESET}" || printf "${COLOR_YELLOW}not logged in${COLOR_RESET}" )"
         printf "\n"
 
         if [ ${#remediation[@]} -gt 0 ]; then
@@ -214,6 +244,8 @@ get_profile_json() {
   "docker_version": "${PROFILE_DOCKER:-missing}",
   "compose_version": "${PROFILE_COMPOSE:-missing}",
   "docker_daemon_active": ${PROFILE_DAEMON:-false},
+  "gh_version": "${PROFILE_GH:-missing}",
+  "gh_authenticated": ${PROFILE_GH_AUTH:-false},
   "is_compatible": ${PROFILE_COMPATIBLE:-false},
   "remediation_steps": ${rem_json}
 }

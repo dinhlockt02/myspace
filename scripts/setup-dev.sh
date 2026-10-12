@@ -5,6 +5,19 @@ set -eo pipefail
 SCRIPT_DIR="$(CDPATH="" cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(CDPATH="" cd "${SCRIPT_DIR}/.." && pwd)"
 
+# Auto-discover standard toolchains if not present in current shell PATH
+if ! command -v node >/dev/null 2>&1 && [ -s "$HOME/.nvm/nvm.sh" ]; then
+    export NVM_DIR="$HOME/.nvm"
+    # shellcheck disable=SC1090
+    source "$NVM_DIR/nvm.sh"
+fi
+if ! command -v go >/dev/null 2>&1 && [ -d "/usr/local/go/bin" ]; then
+    export PATH="$PATH:/usr/local/go/bin"
+fi
+if [ -d "$HOME/.local/bin" ]; then
+    export PATH="$HOME/.local/bin:$PATH"
+fi
+
 # Source helper modules
 source "${SCRIPT_DIR}/lib/reporter.sh"
 [ -f "${SCRIPT_DIR}/lib/prerequisites.sh" ] && source "${SCRIPT_DIR}/lib/prerequisites.sh"

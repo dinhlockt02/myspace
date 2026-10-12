@@ -20,6 +20,7 @@ audit_all_ai_skills() {
         "speckit-checklist"
         "speckit-taskstoissues"
         "speckit-constitution"
+        "speckit-pr"
     )
 
     SKILLS_AUDIT_RECORDS=()

@@ -26,10 +26,12 @@ The `/dev-onboarding` skill provides an interactive, conversational companion fo
 1. **Host Assessment & Prerequisites Check**:
    - Run `bash scripts/setup-dev.sh --check-only --json`
    - Parse the JSON profile output.
-   - If `is_compatible` is `false`:
-     - Display a clear table of detected tool versions.
+   - Verify detected versions for Node.js (>=20), pnpm (>=9), Go (>=1.22), Docker Engine (>=24), Docker Compose (>=2.20), Docker Daemon, and GitHub CLI `gh` (>=2.0.0).
+   - If `is_compatible` is `false` or `gh_authenticated` is `false`:
+     - Display a clear table of detected tool versions and GitHub CLI auth status.
      - Present the `remediation_steps` to the developer conversationally, providing copy-pasteable commands suited for their detected OS (`linux`, `darwin`, or `windows_wsl`).
-     - Stop and allow the developer to install missing dependencies before proceeding.
+     - Prompt the user to install any missing tools and run `gh auth login` before running PR workflows.
+     - If critical tools are missing (`is_compatible` is false), stop and allow the developer to resolve them before proceeding.
 
 2. **Workspace Bootstrap & Local Containers**:
    - If prerequisites are satisfied (or user requested full onboarding):
@@ -40,7 +42,7 @@ The `/dev-onboarding` skill provides an interactive, conversational companion fo
 
 3. **AI-Native SDLC Suite Audit**:
    - Execute `bash scripts/setup-dev.sh --verify-skills --json`
-   - Audit all 10 Spec-Kit skills and governance rules in `AGENTS.md` and `.specify/memory/constitution.md`.
+   - Audit all 11 Spec-Kit skills (including post-implementation `/speckit-pr`) and governance rules in `AGENTS.md` and `.specify/memory/constitution.md`.
    - Report active capabilities to the developer.
 
 4. **Smoke Test & Verification**:

@@ -25,6 +25,7 @@ Before beginning, ensure your workstation meets the following minimum tool versi
 | **Go** | `>= 1.22.0` | [go.dev/dl](https://go.dev/dl/) or via package manager (`brew install go`, `apt install golang`) |
 | **Docker Engine** | `>= 24.0.0` | [docs.docker.com/engine/install/](https://docs.docker.com/engine/install/) or Docker Desktop |
 | **Docker Compose** | `>= 2.20.0` | Included with modern Docker CLI (`docker compose`) |
+| **GitHub CLI (`gh`)** | `>= 2.0.0` | [cli.github.com](https://cli.github.com/) or via package manager (`brew install gh`, `apt install gh`) |
 
 Supported operating systems: **Linux** (Ubuntu, Debian, Fedora, Arch), **macOS** (Apple Silicon & Intel), and **Windows WSL2**.
 
@@ -81,7 +82,7 @@ pnpm run setup -- --bootstrap
 # Provision and health-check local backing service containers only
 pnpm run setup -- --containers
 
-# Audit all 10 Spec-Kit skills and repository governance rules
+# Audit all 11 Spec-Kit skills and repository governance rules
 pnpm run setup -- --verify-skills
 
 # Run full end-to-end smoke test across all workspace applications
@@ -158,6 +159,7 @@ The repository operates an autonomous, AI-native SDLC pipeline. All skills are l
 | `/speckit-implement` | Autonomously execute and check off tasks defined in `tasks.md` |
 | `/speckit-converge` | Validate codebase against specification and append remaining work |
 | `/speckit-analyze` | Cross-artifact consistency and quality analysis |
+| `/speckit-pr` | Post-implementation Pull Request creation, synchronization, status, and pre-flight quality checks |
 
 ### Governance Rules
 - [`AGENTS.md`](file:///home/loctran/code/myspace/AGENTS.md): Repository structure, AI constraints, CI/CD, and infra conventions.
