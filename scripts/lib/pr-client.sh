@@ -190,11 +190,22 @@ update_github_pr() {
             }
         fi
 
+        if [ "$FLAG_READY" = "true" ]; then
+            gh pr ready "$pr_number" --repo "$slug" >/dev/null 2>&1 || true
+        fi
+
         local pr_url="https://github.com/${slug}/pull/${pr_number}"
         if $is_json; then
-            printf '{"status":"success","action":"updated","pr_number":%s,"pr_url":"%s"}\n' "$pr_number" "$pr_url"
+            local is_draft="false"
+            if [ "$FLAG_READY" != "true" ] && [ "$EXISTING_PR_DRAFT" = "true" ]; then
+                is_draft="true"
+            fi
+            printf '{"status":"success","action":"updated","pr_number":%s,"pr_url":"%s","is_draft":%s}\n' "$pr_number" "$pr_url" "$is_draft"
         else
             log_success "Pull Request #$pr_number description updated successfully!"
+            if [ "$FLAG_READY" = "true" ]; then
+                log_success "Pull Request #$pr_number promoted to Ready for Review!"
+            fi
             printf "  • URL: %s\n\n" "$pr_url"
         fi
         return 0
