@@ -2,125 +2,150 @@ package main
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
+	"errors"
 	"log"
 	"net/http"
 	"os"
-	"time"
+	"strings"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
-	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
-	"github.com/google/uuid"
+	"github.com/dinhloc/myspace/apps/idea-collector/backend/auth"
+	"github.com/dinhloc/myspace/apps/idea-collector/backend/handlers"
+	"github.com/dinhloc/myspace/apps/idea-collector/backend/models"
+	"github.com/dinhloc/myspace/apps/idea-collector/backend/repository"
 )
 
-var dynamodbClient *dynamodb.Client
-var tableName string
+var (
+	authHandler        *handlers.AuthHandler
+	ideasHandler       *handlers.IdeasHandler
+	invitationsHandler *handlers.InvitationsHandler
+	sessionManager     *auth.SessionManager
+)
 
 func init() {
-	tableName = os.Getenv("TABLE_NAME")
-	if tableName == "" {
-		tableName = "IdeaCollector_Ideas"
+	ideasTable := os.Getenv("TABLE_NAME")
+	if ideasTable == "" {
+		ideasTable = "IdeaCollector_Ideas"
 	}
+
+	usersTable := os.Getenv("USERS_TABLE_NAME")
+	if usersTable == "" {
+		usersTable = "IdeaCollector_Users"
+	}
+
+	sessionsTable := os.Getenv("SESSIONS_TABLE_NAME")
+	if sessionsTable == "" {
+		sessionsTable = "IdeaCollector_Sessions"
+	}
+
+	googleClientID := os.Getenv("GOOGLE_CLIENT_ID")
 
 	cfg, err := config.LoadDefaultConfig(context.TODO())
 	if err != nil {
-		log.Fatalf("unable to load SDK config, %v", err)
+		log.Fatalf("unable to load AWS SDK config: %v", err)
 	}
 
-	dynamodbClient = dynamodb.NewFromConfig(cfg)
-}
+	dynamodbClient := dynamodb.NewFromConfig(cfg)
+	repo := repository.NewRepository(dynamodbClient, ideasTable, usersTable, sessionsTable)
+	verifier := auth.NewGoogleTokenVerifier(googleClientID)
+	sessionManager = auth.NewSessionManager(repo)
 
-type IdeaSubmissionRequest struct {
-	Idea      string  `json:"idea"`
-	Timestamp float64 `json:"timestamp"` // Unix time ms
-}
-
-type IdeaSubmissionResponse struct {
-	Success bool   `json:"success"`
-	ID      string `json:"id"`
-	Message string `json:"message"`
-}
-
-type ErrorResponse struct {
-	Error   string `json:"error"`
-	Message string `json:"message"`
+	authHandler = handlers.NewAuthHandler(repo, verifier, sessionManager)
+	ideasHandler = handlers.NewIdeasHandler(repo)
+	invitationsHandler = handlers.NewInvitationsHandler(repo)
 }
 
 func handleRequest(ctx context.Context, req events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
-	if req.HTTPMethod != "POST" {
-		return errorResponse(http.StatusMethodNotAllowed, "Method not allowed", "Only POST method is supported.")
+	// Handle CORS preflight
+	if req.HTTPMethod == "OPTIONS" {
+		return handlers.JSONResponse(http.StatusOK, map[string]bool{"ok": true})
 	}
 
-	var payload IdeaSubmissionRequest
-	if err := json.Unmarshal([]byte(req.Body), &payload); err != nil {
-		return errorResponse(http.StatusBadRequest, "Invalid JSON", "Could not parse request body.")
+	path := req.Path
+	if path == "" {
+		path = req.RequestContext.Path
 	}
 
-	// Validation logic (T009)
-	if len(payload.Idea) < 1 || len(payload.Idea) > 5000 {
-		return errorResponse(http.StatusBadRequest, "Validation failed", "The 'idea' field is required and must not exceed 5000 characters.")
+	// Normalize trailing slash if present
+	if len(path) > 1 && strings.HasSuffix(path, "/") {
+		path = strings.TrimSuffix(path, "/")
 	}
 
-	if payload.Timestamp == 0 {
-		return errorResponse(http.StatusBadRequest, "Validation failed", "The 'timestamp' field is required.")
+	// Public Routes
+	if req.HTTPMethod == "POST" && path == "/api/auth/google" {
+		return authHandler.HandleGoogleAuth(ctx, req)
 	}
 
-	// T011: Map data model and PutItem
-	id := uuid.New().String()
-	serverTimestamp := float64(time.Now().UnixNano()) / 1e6 // in milliseconds
-
-	item := map[string]types.AttributeValue{
-		"id":               &types.AttributeValueMemberS{Value: id},
-		"idea":             &types.AttributeValueMemberS{Value: payload.Idea},
-		"client_timestamp": &types.AttributeValueMemberN{Value: fmt.Sprintf("%f", payload.Timestamp)},
-		"server_timestamp": &types.AttributeValueMemberN{Value: fmt.Sprintf("%f", serverTimestamp)},
+	// Protected Routes - require Authorization: Bearer <token>
+	token := extractBearerToken(req)
+	if token == "" {
+		return handlers.JSONResponse(http.StatusUnauthorized, models.ErrorResponse{
+			Error:   "UNAUTHORIZED",
+			Message: "Authentication required. Bearer token missing.",
+		})
 	}
 
-	_, err := dynamodbClient.PutItem(ctx, &dynamodb.PutItemInput{
-		TableName: &tableName,
-		Item:      item,
-	})
-
+	session, err := sessionManager.ValidateSession(ctx, token)
 	if err != nil {
-		log.Printf("Failed to put item into dynamodb: %v", err)
-		return errorResponse(http.StatusInternalServerError, "Internal Server Error", "Could not save the idea.")
+		if errors.Is(err, auth.ErrSessionExpired) {
+			return handlers.JSONResponse(http.StatusUnauthorized, models.ErrorResponse{
+				Error:   "SESSION_EXPIRED",
+				Message: "Session has expired due to 1-hour idle timeout. Please re-authenticate.",
+			})
+		}
+		if errors.Is(err, auth.ErrAccountSuspended) {
+			return handlers.JSONResponse(http.StatusForbidden, models.ErrorResponse{
+				Error:   "ACCOUNT_SUSPENDED",
+				Message: "Your account has been suspended.",
+			})
+		}
+		return handlers.JSONResponse(http.StatusUnauthorized, models.ErrorResponse{
+			Error:   "UNAUTHORIZED",
+			Message: "Invalid or expired session.",
+		})
 	}
 
-	// T012: Return 201 Created
-	resp := IdeaSubmissionResponse{
-		Success: true,
-		ID:      id,
-		Message: "Idea successfully submitted.",
-	}
-	respBody, _ := json.Marshal(resp)
+	switch {
+	case req.HTTPMethod == "GET" && path == "/api/auth/me":
+		return authHandler.HandleGetMe(ctx, session)
 
-	return events.APIGatewayProxyResponse{
-		StatusCode: http.StatusCreated,
-		Headers: map[string]string{
-			"Content-Type": "application/json",
-		},
-		Body: string(respBody),
-	}, nil
+	case req.HTTPMethod == "POST" && path == "/api/auth/logout":
+		return authHandler.HandleLogout(ctx, session)
+
+	case req.HTTPMethod == "POST" && path == "/api/ideas":
+		return ideasHandler.HandleSubmitIdea(ctx, req, session)
+
+	case req.HTTPMethod == "GET" && path == "/api/ideas":
+		return ideasHandler.HandleListIdeas(ctx, session)
+
+	case req.HTTPMethod == "POST" && path == "/api/invitations":
+		return invitationsHandler.HandleCreateInvitation(ctx, req, session)
+
+	default:
+		return handlers.JSONResponse(http.StatusNotFound, models.ErrorResponse{
+			Error:   "NOT_FOUND",
+			Message: "Route not found.",
+		})
+	}
 }
 
-func errorResponse(statusCode int, errType, message string) (events.APIGatewayProxyResponse, error) {
-	resp := ErrorResponse{
-		Error:   errType,
-		Message: message,
+func extractBearerToken(req events.APIGatewayProxyRequest) string {
+	authHeader := req.Headers["Authorization"]
+	if authHeader == "" {
+		authHeader = req.Headers["authorization"]
 	}
-	body, _ := json.Marshal(resp)
+	if authHeader == "" {
+		return ""
+	}
 
-	return events.APIGatewayProxyResponse{
-		StatusCode: statusCode,
-		Headers: map[string]string{
-			"Content-Type": "application/json",
-		},
-		Body: string(body),
-	}, nil
+	parts := strings.SplitN(authHeader, " ", 2)
+	if len(parts) == 2 && strings.EqualFold(parts[0], "Bearer") {
+		return strings.TrimSpace(parts[1])
+	}
+	return ""
 }
 
 func main() {

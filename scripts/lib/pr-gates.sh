@@ -101,12 +101,14 @@ run_preflight_gates() {
     run_project_quality_checks "$is_json" "$base" || all_passed=false
 
     if $is_json; then
-        if $all_passed; then
-            printf '{"status":"success","action":"checked","quality_gates":{"git_clean":%s,"lint":%s,"test":%s,"secrets_clear":%s}}\n' \
-                   "$GATE_GIT_CLEAN" "$GATE_LINT" "$GATE_TEST" "$GATE_SECRETS"
-        else
-            printf '{"status":"error","action":"checked","error":"Pre-flight quality gates failed","quality_gates":{"git_clean":%s,"lint":%s,"test":%s,"secrets_clear":%s}}\n' \
-                   "$GATE_GIT_CLEAN" "$GATE_LINT" "$GATE_TEST" "$GATE_SECRETS"
+        if [ "$CMD" = "check" ] || ! $all_passed; then
+            if $all_passed; then
+                printf '{"status":"success","action":"checked","quality_gates":{"git_clean":%s,"lint":%s,"test":%s,"secrets_clear":%s}}\n' \
+                       "$GATE_GIT_CLEAN" "$GATE_LINT" "$GATE_TEST" "$GATE_SECRETS"
+            else
+                printf '{"status":"error","action":"checked","error":"Pre-flight quality gates failed","quality_gates":{"git_clean":%s,"lint":%s,"test":%s,"secrets_clear":%s}}\n' \
+                       "$GATE_GIT_CLEAN" "$GATE_LINT" "$GATE_TEST" "$GATE_SECRETS"
+            fi
         fi
     else
         if $all_passed; then

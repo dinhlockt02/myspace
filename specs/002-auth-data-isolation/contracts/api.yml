@@ -1,0 +1,346 @@
+openapi: 3.0.3
+info:
+  title: Idea Collector API - Authentication, Data Isolation & Invitations
+  version: 2.1.0
+  description: API for authenticated idea collection, strict per-user data isolation, and user invitations.
+
+servers:
+  - url: https://idea.dinhloc.dev
+    description: Production Environment
+
+security:
+  - BearerAuth: []
+
+paths:
+  /api/auth/google:
+    post:
+      summary: Authenticate via Google SSO
+      description: Verifies Google ID Token against Google JWKS and confirms invite-only authorization before issuing an application session.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GoogleAuthRequest'
+      responses:
+        '200':
+          description: Successfully authenticated. Active session token returned.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthSessionResponse'
+        '400':
+          description: Malformed request payload.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Invalid, unverifiable, or expired Google ID Token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Account not authorized (uninvited email or suspended account).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/auth/me:
+    get:
+      summary: Get current authenticated user
+      description: Returns the user profile associated with the active session and refreshes the idle timeout sliding window.
+      responses:
+        '200':
+          description: Current user profile and session info.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfileResponse'
+        '401':
+          description: Session missing, invalid, or expired due to 1-hour idle timeout.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/auth/logout:
+    post:
+      summary: End session
+      description: Immediately invalidates the active application session token.
+      responses:
+        '200':
+          description: Session terminated successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LogoutResponse'
+        '401':
+          description: Session missing, invalid, or already expired.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/invitations:
+    post:
+      summary: Invite a new user
+      description: Allows any authenticated user to authorize a new Google email address to access the application.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InvitationRequest'
+      responses:
+        '201':
+          description: Invitation created successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvitationResponse'
+        '400':
+          description: Invalid email format or self-invitation attempt.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Authentication required or session expired.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: The specified email address has already been invited or is active.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/ideas:
+    get:
+      summary: List user ideas
+      description: Retrieves all ideas submitted by the authenticated user, ordered reverse-chronologically (newest first). Strictly isolated to the calling user.
+      responses:
+        '200':
+          description: List of the authenticated user's ideas.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IdeaListResponse'
+        '401':
+          description: Authentication required or session expired.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    post:
+      summary: Submit a new idea
+      description: Associates and persists a new idea under the authenticated user's account.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IdeaSubmissionRequest'
+      responses:
+        '201':
+          description: Idea created and associated with authenticated user.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IdeaSubmissionResponse'
+        '400':
+          description: Validation error (e.g. empty idea, text > 5000 characters).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Authentication required or session expired.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: Token
+      description: 32-byte secure random session token returned from /api/auth/google
+
+  schemas:
+    GoogleAuthRequest:
+      type: object
+      required:
+        - id_token
+      properties:
+        id_token:
+          type: string
+          description: The raw OpenID Connect ID Token issued by Google Identity Services.
+
+    AuthSessionResponse:
+      type: object
+      required:
+        - session_token
+        - expires_in
+        - user
+      properties:
+        session_token:
+          type: string
+          description: Application session token to pass in the Authorization header.
+        expires_in:
+          type: integer
+          example: 3600
+          description: Seconds until idle session expiration (1 hour).
+        user:
+          $ref: '#/components/schemas/UserDto'
+
+    UserDto:
+      type: object
+      required:
+        - id
+        - email
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Internal unique user identifier.
+        email:
+          type: string
+          format: email
+          description: Verified Google email address.
+
+    UserProfileResponse:
+      type: object
+      required:
+        - user
+        - idle_expires_in
+      properties:
+        user:
+          $ref: '#/components/schemas/UserDto'
+        idle_expires_in:
+          type: integer
+          example: 3600
+          description: Remaining seconds before idle timeout unless another request is made.
+
+    LogoutResponse:
+      type: object
+      required:
+        - success
+        - message
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: "Logged out successfully."
+
+    InvitationRequest:
+      type: object
+      required:
+        - email
+      properties:
+        email:
+          type: string
+          format: email
+          description: The Google email address to invite.
+
+    InvitationResponse:
+      type: object
+      required:
+        - success
+        - message
+        - email
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: "Invitation created successfully."
+        email:
+          type: string
+          format: email
+
+    IdeaSubmissionRequest:
+      type: object
+      required:
+        - idea
+        - timestamp
+      properties:
+        idea:
+          type: string
+          minLength: 1
+          maxLength: 5000
+          description: Text content of the idea.
+        timestamp:
+          type: number
+          description: Client-side Unix timestamp in milliseconds.
+
+    IdeaSubmissionResponse:
+      type: object
+      required:
+        - success
+        - id
+        - message
+      properties:
+        success:
+          type: boolean
+          example: true
+        id:
+          type: string
+          format: uuid
+          description: Identifier of the newly created idea.
+        message:
+          type: string
+          example: "Idea successfully submitted."
+
+    IdeaItem:
+      type: object
+      required:
+        - id
+        - idea
+        - client_timestamp
+        - server_timestamp
+      properties:
+        id:
+          type: string
+          format: uuid
+        idea:
+          type: string
+        client_timestamp:
+          type: number
+        server_timestamp:
+          type: number
+
+    IdeaListResponse:
+      type: object
+      required:
+        - ideas
+      properties:
+        ideas:
+          type: array
+          items:
+            $ref: '#/components/schemas/IdeaItem'
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+        - message
+      properties:
+        error:
+          type: string
+          example: "UNAUTHORIZED"
+        message:
+          type: string
+          example: "Valid active session is required."

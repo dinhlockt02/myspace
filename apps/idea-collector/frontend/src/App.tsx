@@ -1,47 +1,107 @@
 import { useState } from 'react'
-
-const API_URL = import.meta.env.VITE_API_URL || ''
+import { useAuth } from './hooks/useAuth'
+import { useIdeas } from './hooks/useIdeas'
+import { useDraft } from './hooks/useDraft'
+import { useInvitations } from './hooks/useInvitations'
+import { Header } from './components/Header'
+import { AuthPrompt } from './components/AuthPrompt'
+import { IdeaForm } from './components/IdeaForm'
+import { IdeaList } from './components/IdeaList'
+import { InviteForm } from './components/InviteForm'
+import { SessionExpiredModal } from './components/SessionExpiredModal'
+import './App.css'
 
 function App() {
-  const [idea, setIdea] = useState('')
-  const [status, setStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle')
+  const {
+    user,
+    loading: authLoading,
+    error: authError,
+    isSessionExpired,
+    loginWithGoogle,
+    logout,
+  } = useAuth()
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!idea.trim()) return
+  const {
+    ideas,
+    loading: ideasLoading,
+    submitting,
+    submitIdea,
+  } = useIdeas(!!user)
 
-    setStatus('submitting')
-    try {
-      await fetch(API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ idea, timestamp: Date.now() }),
-      })
-      setStatus('success')
-      setIdea('')
-    } catch {
-      setStatus('error')
-    }
+  const { draft, setDraft, clearDraft } = useDraft()
+
+  const {
+    inviting,
+    error: inviteError,
+    successEmail: inviteSuccessEmail,
+    sendInvitation,
+    resetStatus: resetInviteStatus,
+  } = useInvitations()
+
+  const [isInviteOpen, setIsInviteOpen] = useState(false)
+
+  if (authLoading) {
+    return (
+      <div className="app-container app-loading">
+        <div className="spinner" />
+        <p>Loading application...</p>
+      </div>
+    )
+  }
+
+  if (!user) {
+    return (
+      <div className="app-container auth-view">
+        <AuthPrompt
+          onSuccess={loginWithGoogle}
+          error={authError}
+          loading={authLoading}
+        />
+      </div>
+    )
   }
 
   return (
-    <div style={{ maxWidth: 600, margin: '2rem auto', padding: '0 1rem' }}>
-      <h1>Idea Collector</h1>
-      <form onSubmit={handleSubmit}>
-        <textarea
-          value={idea}
-          onChange={(e) => setIdea(e.target.value)}
-          placeholder="Share your idea..."
-          rows={6}
-          style={{ width: '100%', padding: '0.5rem', fontSize: '1rem' }}
-          disabled={status === 'submitting'}
+    <div className="app-container workspace-view">
+      <Header
+        user={user}
+        onLogout={logout}
+        onOpenInvite={() => setIsInviteOpen(true)}
+      />
+
+      <main className="workspace-main">
+        <div className="workspace-intro">
+          <h2>Personal Idea Vault</h2>
+          <p>
+            Your ideas are strictly private and accessible only by you.
+          </p>
+        </div>
+
+        <IdeaForm
+          draft={draft}
+          onDraftChange={setDraft}
+          onSubmit={submitIdea}
+          onClearDraft={clearDraft}
+          submitting={submitting}
         />
-        <button type="submit" disabled={status === 'submitting' || !idea.trim()}>
-          {status === 'submitting' ? 'Submitting...' : 'Submit Idea'}
-        </button>
-      </form>
-      {status === 'success' && <p style={{ color: 'green' }}>Idea submitted!</p>}
-      {status === 'error' && <p style={{ color: 'red' }}>Failed to submit. Try again.</p>}
+
+        <IdeaList ideas={ideas} loading={ideasLoading} />
+      </main>
+
+      <InviteForm
+        isOpen={isInviteOpen}
+        onClose={() => setIsInviteOpen(false)}
+        onInvite={sendInvitation}
+        inviting={inviting}
+        error={inviteError}
+        successEmail={inviteSuccessEmail}
+        onReset={resetInviteStatus}
+      />
+
+      <SessionExpiredModal
+        isOpen={isSessionExpired}
+        onSuccess={loginWithGoogle}
+      />
     </div>
   )
 }
