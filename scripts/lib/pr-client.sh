@@ -178,16 +178,20 @@ update_github_pr() {
     slug=$(parse_github_repo_slug)
 
     if [ "$PR_CLIENT_MODE" = "gh" ]; then
+        local update_ok=true
         if [ -n "$title" ]; then
-            gh pr edit "$pr_number" --repo "$slug" --title "$title" --body "$body" >/dev/null 2>&1 || {
-                if ! $is_json; then log_error "Failed to update PR #$pr_number via GitHub CLI."; fi
-                return 4
-            }
+            if ! gh pr edit "$pr_number" --repo "$slug" --title "$title" --body "$body" >/dev/null 2>&1; then
+                gh api -X PATCH "repos/${slug}/pulls/${pr_number}" -f title="$title" -f body="$body" >/dev/null 2>&1 || update_ok=false
+            fi
         else
-            gh pr edit "$pr_number" --repo "$slug" --body "$body" >/dev/null 2>&1 || {
-                if ! $is_json; then log_error "Failed to update PR #$pr_number body via GitHub CLI."; fi
-                return 4
-            }
+            if ! gh pr edit "$pr_number" --repo "$slug" --body "$body" >/dev/null 2>&1; then
+                gh api -X PATCH "repos/${slug}/pulls/${pr_number}" -f body="$body" >/dev/null 2>&1 || update_ok=false
+            fi
+        fi
+
+        if ! $update_ok; then
+            if ! $is_json; then log_error "Failed to update PR #$pr_number via GitHub CLI."; fi
+            return 4
         fi
 
         if [ "$FLAG_READY" = "true" ]; then
