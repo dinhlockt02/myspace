@@ -71,16 +71,16 @@ EOF
 # Parse command line
 while [[ $# -gt 0 ]]; do
     case "$1" in
-        create|new|open|create-mr)
+        create|new|open|create-mr|--create)
             CMD="create"
             ;;
-        update|sync|refresh|update-mr)
+        update|sync|refresh|update-mr|--update)
             CMD="update"
             ;;
-        status|checks|info)
+        status|checks|info|--status)
             CMD="status"
             ;;
-        check|verify|pre-flight)
+        check|verify|pre-flight|--check)
             CMD="check"
             ;;
         --draft)

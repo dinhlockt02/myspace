@@ -174,3 +174,10 @@ variable "subdomain" {
   default     = "idea"
   description = "The subdomain to prepend to the domain name"
 }
+
+variable "google_client_id" {
+  type        = string
+  default     = ""
+  description = "Google OAuth2 Client ID for Google SSO identity assertion verification"
+}
+

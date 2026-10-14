@@ -83,7 +83,7 @@ resource "aws_route53_record" "frontend_alias" {
 }
 
 # -----------------------------------------------------------------------------
-# DynamoDB Table
+# DynamoDB Tables
 # -----------------------------------------------------------------------------
 resource "aws_dynamodb_table" "ideas" {
   name         = "IdeaCollector_Ideas"
@@ -93,6 +93,50 @@ resource "aws_dynamodb_table" "ideas" {
   attribute {
     name = "id"
     type = "S"
+  }
+
+  attribute {
+    name = "user_id"
+    type = "S"
+  }
+
+  attribute {
+    name = "server_timestamp"
+    type = "N"
+  }
+
+  global_secondary_index {
+    name            = "UserIdeasIndex"
+    hash_key        = "user_id"
+    range_key       = "server_timestamp"
+    projection_type = "ALL"
+  }
+}
+
+resource "aws_dynamodb_table" "users" {
+  name         = "IdeaCollector_Users"
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "email"
+
+  attribute {
+    name = "email"
+    type = "S"
+  }
+}
+
+resource "aws_dynamodb_table" "sessions" {
+  name         = "IdeaCollector_Sessions"
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "session_id"
+
+  attribute {
+    name = "session_id"
+    type = "S"
+  }
+
+  ttl {
+    attribute_name = "expires_at"
+    enabled        = true
   }
 }
 
@@ -128,23 +172,33 @@ resource "aws_iam_role_policy_attachment" "lambda_basic_execution" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
 }
 
-data "aws_iam_policy_document" "dynamodb_write" {
+data "aws_iam_policy_document" "dynamodb_access" {
   statement {
     actions = [
       "dynamodb:PutItem",
+      "dynamodb:GetItem",
+      "dynamodb:UpdateItem",
+      "dynamodb:DeleteItem",
+      "dynamodb:Query",
+      "dynamodb:Scan",
     ]
-    resources = [aws_dynamodb_table.ideas.arn]
+    resources = [
+      aws_dynamodb_table.ideas.arn,
+      "${aws_dynamodb_table.ideas.arn}/index/*",
+      aws_dynamodb_table.users.arn,
+      aws_dynamodb_table.sessions.arn,
+    ]
   }
 }
 
-resource "aws_iam_policy" "dynamodb_write" {
-  name   = "IdeaCollector_DynamoDBWrite"
-  policy = data.aws_iam_policy_document.dynamodb_write.json
+resource "aws_iam_policy" "dynamodb_access" {
+  name   = "IdeaCollector_DynamoDBAccess"
+  policy = data.aws_iam_policy_document.dynamodb_access.json
 }
 
 resource "aws_iam_role_policy_attachment" "lambda_dynamodb" {
   role       = aws_iam_role.lambda_exec.name
-  policy_arn = aws_iam_policy.dynamodb_write.arn
+  policy_arn = aws_iam_policy.dynamodb_access.arn
 }
 
 # -----------------------------------------------------------------------------
@@ -161,7 +215,10 @@ resource "aws_lambda_function" "ingestion" {
 
   environment {
     variables = {
-      TABLE_NAME = aws_dynamodb_table.ideas.name
+      TABLE_NAME          = aws_dynamodb_table.ideas.name
+      USERS_TABLE_NAME    = aws_dynamodb_table.users.name
+      SESSIONS_TABLE_NAME = aws_dynamodb_table.sessions.name
+      GOOGLE_CLIENT_ID    = var.google_client_id
     }
   }
 }
@@ -193,3 +250,34 @@ resource "aws_apigatewayv2_route" "post_ideas" {
   route_key = "POST /api/ideas"
   target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
 }
+
+resource "aws_apigatewayv2_route" "get_ideas" {
+  api_id    = aws_apigatewayv2_api.ingestion.id
+  route_key = "GET /api/ideas"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+}
+
+resource "aws_apigatewayv2_route" "post_auth_google" {
+  api_id    = aws_apigatewayv2_api.ingestion.id
+  route_key = "POST /api/auth/google"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+}
+
+resource "aws_apigatewayv2_route" "get_auth_me" {
+  api_id    = aws_apigatewayv2_api.ingestion.id
+  route_key = "GET /api/auth/me"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+}
+
+resource "aws_apigatewayv2_route" "post_auth_logout" {
+  api_id    = aws_apigatewayv2_api.ingestion.id
+  route_key = "POST /api/auth/logout"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+}
+
+resource "aws_apigatewayv2_route" "post_invitations" {
+  api_id    = aws_apigatewayv2_api.ingestion.id
+  route_key = "POST /api/invitations"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+}
+
