@@ -181,3 +181,16 @@ variable "google_client_id" {
   description = "Google OAuth2 Client ID for Google SSO identity assertion verification"
 }
 
+variable "google_client_secret" {
+  type        = string
+  default     = ""
+  sensitive   = true
+  description = "Google OAuth2 Client Secret for Cognito Google Identity Provider"
+}
+
+variable "cognito_domain_prefix" {
+  type        = string
+  default     = "auth-idea-dinhloc"
+  description = "Prefix for the Cognito hosted domain"
+}
+

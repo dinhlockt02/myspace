@@ -93,33 +93,16 @@ func (h *AuthHandler) HandleGoogleAuth(ctx context.Context, req events.APIGatewa
 }
 
 // HandleGetMe handles GET /api/auth/me
-func (h *AuthHandler) HandleGetMe(ctx context.Context, session *models.Session) (events.APIGatewayProxyResponse, error) {
-	nowMs := float64(time.Now().UnixNano()) / 1e6
-	idleDurationMs := nowMs - session.LastActivityAt
-	remainingIdleSec := int((float64(auth.IdleTimeoutMilliseconds) - idleDurationMs) / 1000)
-	if remainingIdleSec < 0 {
-		remainingIdleSec = 0
-	}
-
+func (h *AuthHandler) HandleGetMe(ctx context.Context, user *models.UserDTO) (events.APIGatewayProxyResponse, error) {
 	resp := models.UserProfileResponse{
-		User: models.UserDTO{
-			ID:    session.UserID,
-			Email: session.Email,
-		},
-		IdleExpiresIn: remainingIdleSec,
+		User:          *user,
+		IdleExpiresIn: 3600,
 	}
 	return JSONResponse(http.StatusOK, resp)
 }
 
 // HandleLogout handles POST /api/auth/logout
-func (h *AuthHandler) HandleLogout(ctx context.Context, session *models.Session) (events.APIGatewayProxyResponse, error) {
-	if err := h.sessionManager.InvalidateSession(ctx, session.SessionID); err != nil {
-		return JSONResponse(http.StatusInternalServerError, models.ErrorResponse{
-			Error:   "INTERNAL_ERROR",
-			Message: "Failed to terminate session.",
-		})
-	}
-
+func (h *AuthHandler) HandleLogout(ctx context.Context, user *models.UserDTO) (events.APIGatewayProxyResponse, error) {
 	return JSONResponse(http.StatusOK, models.LogoutResponse{
 		Success: true,
 		Message: "Logged out successfully.",

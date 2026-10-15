@@ -19,10 +19,9 @@ import (
 )
 
 var (
-	authHandler        *handlers.AuthHandler
-	ideasHandler       *handlers.IdeasHandler
-	invitationsHandler *handlers.InvitationsHandler
-	sessionManager     *auth.SessionManager
+	authHandler    *handlers.AuthHandler
+	ideasHandler   *handlers.IdeasHandler
+	sessionManager *auth.SessionManager
 )
 
 func init() {
@@ -55,7 +54,6 @@ func init() {
 
 	authHandler = handlers.NewAuthHandler(repo, verifier, sessionManager)
 	ideasHandler = handlers.NewIdeasHandler(repo)
-	invitationsHandler = handlers.NewInvitationsHandler(repo)
 }
 
 func handleRequest(ctx context.Context, req events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
@@ -79,50 +77,27 @@ func handleRequest(ctx context.Context, req events.APIGatewayProxyRequest) (even
 		return authHandler.HandleGoogleAuth(ctx, req)
 	}
 
-	// Protected Routes - require Authorization: Bearer <token>
-	token := extractBearerToken(req)
-	if token == "" {
-		return handlers.JSONResponse(http.StatusUnauthorized, models.ErrorResponse{
-			Error:   "UNAUTHORIZED",
-			Message: "Authentication required. Bearer token missing.",
-		})
-	}
-
-	session, err := sessionManager.ValidateSession(ctx, token)
+	// Protected Routes - resolve authenticated user from Cognito JWT Authorizer or Bearer token
+	user, err := extractUserFromRequest(ctx, req)
 	if err != nil {
-		if errors.Is(err, auth.ErrSessionExpired) {
-			return handlers.JSONResponse(http.StatusUnauthorized, models.ErrorResponse{
-				Error:   "SESSION_EXPIRED",
-				Message: "Session has expired due to 1-hour idle timeout. Please re-authenticate.",
-			})
-		}
-		if errors.Is(err, auth.ErrAccountSuspended) {
-			return handlers.JSONResponse(http.StatusForbidden, models.ErrorResponse{
-				Error:   "ACCOUNT_SUSPENDED",
-				Message: "Your account has been suspended.",
-			})
-		}
 		return handlers.JSONResponse(http.StatusUnauthorized, models.ErrorResponse{
 			Error:   "UNAUTHORIZED",
-			Message: "Invalid or expired session.",
+			Message: "Authentication required: " + err.Error(),
 		})
 	}
 
 	switch {
 	case req.HTTPMethod == "GET" && path == "/api/auth/me":
-		return authHandler.HandleGetMe(ctx, session)
+		return authHandler.HandleGetMe(ctx, user)
 
 	case req.HTTPMethod == "POST" && path == "/api/auth/logout":
-		return authHandler.HandleLogout(ctx, session)
+		return authHandler.HandleLogout(ctx, user)
 
 	case req.HTTPMethod == "POST" && path == "/api/ideas":
-		return ideasHandler.HandleSubmitIdea(ctx, req, session)
+		return ideasHandler.HandleSubmitIdea(ctx, req, user)
 
 	case req.HTTPMethod == "GET" && path == "/api/ideas":
-		return ideasHandler.HandleListIdeas(ctx, session)
-
-	case req.HTTPMethod == "POST" && path == "/api/invitations":
-		return invitationsHandler.HandleCreateInvitation(ctx, req, session)
+		return ideasHandler.HandleListIdeas(ctx, user)
 
 	default:
 		return handlers.JSONResponse(http.StatusNotFound, models.ErrorResponse{
@@ -130,6 +105,55 @@ func handleRequest(ctx context.Context, req events.APIGatewayProxyRequest) (even
 			Message: "Route not found.",
 		})
 	}
+}
+
+func extractUserFromRequest(ctx context.Context, req events.APIGatewayProxyRequest) (*models.UserDTO, error) {
+	// 1. Check API Gateway HTTP API v2 JWT Authorizer claims
+	if req.RequestContext.Authorizer != nil {
+		if jwtObj, ok := req.RequestContext.Authorizer["jwt"].(map[string]interface{}); ok {
+			if claims, ok := jwtObj["claims"].(map[string]interface{}); ok {
+				sub, _ := claims["sub"].(string)
+				email, _ := claims["email"].(string)
+				name, _ := claims["name"].(string)
+				if sub != "" {
+					return &models.UserDTO{
+						ID:    sub,
+						Email: email,
+						Name:  name,
+					}, nil
+				}
+			}
+		}
+		if sub, ok := req.RequestContext.Authorizer["sub"].(string); ok && sub != "" {
+			email, _ := req.RequestContext.Authorizer["email"].(string)
+			name, _ := req.RequestContext.Authorizer["name"].(string)
+			return &models.UserDTO{
+				ID:    sub,
+				Email: email,
+				Name:  name,
+			}, nil
+		}
+	}
+
+	// 2. Fallback to Bearer token lookup for backward compatibility and tests
+	token := extractBearerToken(req)
+	if token != "" && sessionManager != nil {
+		session, err := sessionManager.ValidateSession(ctx, token)
+		if err == nil && session != nil {
+			return &models.UserDTO{
+				ID:    session.UserID,
+				Email: session.Email,
+			}, nil
+		}
+		if errors.Is(err, auth.ErrSessionExpired) {
+			return nil, errors.New("session has expired due to idle timeout")
+		}
+		if errors.Is(err, auth.ErrAccountSuspended) {
+			return nil, errors.New("account suspended")
+		}
+	}
+
+	return nil, errors.New("missing or invalid authorization credentials")
 }
 
 func extractBearerToken(req events.APIGatewayProxyRequest) string {

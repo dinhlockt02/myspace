@@ -202,6 +202,81 @@ resource "aws_iam_role_policy_attachment" "lambda_dynamodb" {
 }
 
 # -----------------------------------------------------------------------------
+# AWS Cognito User Pool & Federation
+# -----------------------------------------------------------------------------
+resource "aws_cognito_user_pool" "main" {
+  name                     = "${var.project_name}-user-pool"
+  auto_verified_attributes = ["email"]
+  username_attributes      = ["email"]
+
+  schema {
+    attribute_data_type = "String"
+    name                = "email"
+    required            = true
+    mutable             = true
+  }
+
+  schema {
+    attribute_data_type = "String"
+    name                = "name"
+    required            = false
+    mutable             = true
+  }
+}
+
+resource "aws_cognito_identity_provider" "google" {
+  user_pool_id  = aws_cognito_user_pool.main.id
+  provider_name = "Google"
+  provider_type = "Google"
+
+  provider_details = {
+    client_id        = var.google_client_id
+    client_secret    = var.google_client_secret
+    authorize_scopes = "openid email profile"
+  }
+
+  attribute_mapping = {
+    email    = "email"
+    name     = "name"
+    username = "sub"
+  }
+}
+
+resource "aws_cognito_user_pool_domain" "main" {
+  domain       = var.cognito_domain_prefix
+  user_pool_id = aws_cognito_user_pool.main.id
+}
+
+resource "aws_cognito_user_pool_client" "client" {
+  name         = "${var.project_name}-spa-client"
+  user_pool_id = aws_cognito_user_pool.main.id
+
+  generate_secret = false
+  explicit_auth_flows = [
+    "ALLOW_REFRESH_TOKEN_AUTH",
+    "ALLOW_USER_SRP_AUTH"
+  ]
+
+  supported_identity_providers = ["COGNITO", "Google"]
+
+  allowed_oauth_flows                  = ["code"]
+  allowed_oauth_flows_user_pool_client = true
+  allowed_oauth_scopes                 = ["openid", "email", "profile"]
+
+  callback_urls = [
+    "https://${local.fqdn}",
+    "http://localhost:5173"
+  ]
+
+  logout_urls = [
+    "https://${local.fqdn}",
+    "http://localhost:5173"
+  ]
+
+  depends_on = [aws_cognito_identity_provider.google]
+}
+
+# -----------------------------------------------------------------------------
 # Lambda Function
 # -----------------------------------------------------------------------------
 resource "aws_lambda_function" "ingestion" {
@@ -215,10 +290,9 @@ resource "aws_lambda_function" "ingestion" {
 
   environment {
     variables = {
-      TABLE_NAME          = aws_dynamodb_table.ideas.name
-      USERS_TABLE_NAME    = aws_dynamodb_table.users.name
-      SESSIONS_TABLE_NAME = aws_dynamodb_table.sessions.name
-      GOOGLE_CLIENT_ID    = var.google_client_id
+      TABLE_NAME            = aws_dynamodb_table.ideas.name
+      COGNITO_USER_POOL_ID  = aws_cognito_user_pool.main.id
+      COGNITO_APP_CLIENT_ID = aws_cognito_user_pool_client.client.id
     }
   }
 }
@@ -239,6 +313,18 @@ resource "aws_lambda_permission" "apigw" {
   source_arn    = "${aws_apigatewayv2_api.ingestion.execution_arn}/*/*"
 }
 
+resource "aws_apigatewayv2_authorizer" "cognito" {
+  api_id           = aws_apigatewayv2_api.ingestion.id
+  authorizer_type  = "JWT"
+  identity_sources = ["$request.header.Authorization"]
+  name             = "CognitoAuthorizer"
+
+  jwt_configuration {
+    audience = [aws_cognito_user_pool_client.client.id]
+    issuer   = "https://${aws_cognito_user_pool.main.endpoint}"
+  }
+}
+
 resource "aws_apigatewayv2_integration" "lambda" {
   api_id           = aws_apigatewayv2_api.ingestion.id
   integration_type = "AWS_PROXY"
@@ -246,38 +332,27 @@ resource "aws_apigatewayv2_integration" "lambda" {
 }
 
 resource "aws_apigatewayv2_route" "post_ideas" {
-  api_id    = aws_apigatewayv2_api.ingestion.id
-  route_key = "POST /api/ideas"
-  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+  api_id             = aws_apigatewayv2_api.ingestion.id
+  route_key          = "POST /api/ideas"
+  target             = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+  authorizer_id      = aws_apigatewayv2_authorizer.cognito.id
+  authorization_type = "JWT"
 }
 
 resource "aws_apigatewayv2_route" "get_ideas" {
-  api_id    = aws_apigatewayv2_api.ingestion.id
-  route_key = "GET /api/ideas"
-  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
-}
-
-resource "aws_apigatewayv2_route" "post_auth_google" {
-  api_id    = aws_apigatewayv2_api.ingestion.id
-  route_key = "POST /api/auth/google"
-  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+  api_id             = aws_apigatewayv2_api.ingestion.id
+  route_key          = "GET /api/ideas"
+  target             = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+  authorizer_id      = aws_apigatewayv2_authorizer.cognito.id
+  authorization_type = "JWT"
 }
 
 resource "aws_apigatewayv2_route" "get_auth_me" {
-  api_id    = aws_apigatewayv2_api.ingestion.id
-  route_key = "GET /api/auth/me"
-  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+  api_id             = aws_apigatewayv2_api.ingestion.id
+  route_key          = "GET /api/auth/me"
+  target             = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+  authorizer_id      = aws_apigatewayv2_authorizer.cognito.id
+  authorization_type = "JWT"
 }
 
-resource "aws_apigatewayv2_route" "post_auth_logout" {
-  api_id    = aws_apigatewayv2_api.ingestion.id
-  route_key = "POST /api/auth/logout"
-  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
-}
-
-resource "aws_apigatewayv2_route" "post_invitations" {
-  api_id    = aws_apigatewayv2_api.ingestion.id
-  route_key = "POST /api/invitations"
-  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
-}
 

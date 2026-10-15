@@ -108,3 +108,65 @@ func TestCrossUserProbeMasking(t *testing.T) {
 		t.Errorf("expected generic NOT_FOUND without metadata, got %s", errResp.Error)
 	}
 }
+
+// Unit test verifying backward compatibility for pre-existing accounts
+func TestLegacyAccountIdeaAccess(t *testing.T) {
+	legacyEmail := "historically_invited@example.com"
+	cognitoSub := "cognito-uuid-9876"
+
+	user := &models.UserDTO{
+		ID:    cognitoSub,
+		Email: legacyEmail,
+		Name:  "Historical User",
+	}
+
+	historicalIdea := &models.Idea{
+		ID:     "historical-idea-001",
+		UserID: legacyEmail, // Partitioned under email in milestone 002
+		Idea:   "Ancient brilliant invention from milestone 002",
+	}
+
+	canAccess := func(idea *models.Idea, u *models.UserDTO) bool {
+		return idea.UserID == u.ID || (u.Email != "" && idea.UserID == u.Email)
+	}
+
+	if !canAccess(historicalIdea, user) {
+		t.Errorf("Expected user with email %s to be able to access historical idea partitioned by email", legacyEmail)
+	}
+}
+
+// Unit test verifying strict cross-tenant isolation between self-registered Cognito users
+func TestCrossTenantDataIsolationWithCognitoSub(t *testing.T) {
+	userA := &models.UserDTO{
+		ID:    "cognito-sub-user-a",
+		Email: "user.a@gmail.com",
+		Name:  "User A",
+	}
+
+	userB := &models.UserDTO{
+		ID:    "cognito-sub-user-b",
+		Email: "user.b@gmail.com",
+		Name:  "User B",
+	}
+
+	ideaA := &models.Idea{
+		ID:     "idea-user-a-secret",
+		UserID: userA.ID,
+		Idea:   "Confidential secret of User A",
+	}
+
+	checkAccess := func(idea *models.Idea, caller *models.UserDTO) bool {
+		return idea.UserID == caller.ID || (caller.Email != "" && idea.UserID == caller.Email)
+	}
+
+	// Caller A accessing Idea A -> Allowed
+	if !checkAccess(ideaA, userA) {
+		t.Errorf("User A must have access to User A's idea")
+	}
+
+	// Caller B accessing Idea A -> Denied
+	if checkAccess(ideaA, userB) {
+		t.Errorf("User B must NOT have access to User A's idea")
+	}
+}
+

@@ -22,7 +22,7 @@ func NewIdeasHandler(repo *repository.Repository) *IdeasHandler {
 }
 
 // HandleSubmitIdea handles POST /api/ideas
-func (h *IdeasHandler) HandleSubmitIdea(ctx context.Context, req events.APIGatewayProxyRequest, session *models.Session) (events.APIGatewayProxyResponse, error) {
+func (h *IdeasHandler) HandleSubmitIdea(ctx context.Context, req events.APIGatewayProxyRequest, user *models.UserDTO) (events.APIGatewayProxyResponse, error) {
 	var payload models.IdeaSubmissionRequest
 	if err := json.Unmarshal([]byte(req.Body), &payload); err != nil {
 		return JSONResponse(http.StatusBadRequest, models.ErrorResponse{
@@ -47,7 +47,7 @@ func (h *IdeasHandler) HandleSubmitIdea(ctx context.Context, req events.APIGatew
 
 	idea := &models.Idea{
 		ID:              ideaID,
-		UserID:          session.UserID,
+		UserID:          user.ID,
 		Idea:            payload.Idea,
 		ClientTimestamp: clientTs,
 		ServerTimestamp: serverTs,
@@ -69,8 +69,8 @@ func (h *IdeasHandler) HandleSubmitIdea(ctx context.Context, req events.APIGatew
 }
 
 // HandleListIdeas handles GET /api/ideas
-func (h *IdeasHandler) HandleListIdeas(ctx context.Context, session *models.Session) (events.APIGatewayProxyResponse, error) {
-	items, err := h.repo.GetIdeasByUserID(ctx, session.UserID)
+func (h *IdeasHandler) HandleListIdeas(ctx context.Context, user *models.UserDTO) (events.APIGatewayProxyResponse, error) {
+	items, err := h.repo.GetIdeasByUser(ctx, user.ID, user.Email)
 	if err != nil {
 		return JSONResponse(http.StatusInternalServerError, models.ErrorResponse{
 			Error:   "INTERNAL_ERROR",
@@ -94,7 +94,7 @@ func (h *IdeasHandler) HandleListIdeas(ctx context.Context, session *models.Sess
 }
 
 // HandleGetIdea handles GET /api/ideas/{id} or direct ID probe
-func (h *IdeasHandler) HandleGetIdea(ctx context.Context, ideaID string, session *models.Session) (events.APIGatewayProxyResponse, error) {
+func (h *IdeasHandler) HandleGetIdea(ctx context.Context, ideaID string, user *models.UserDTO) (events.APIGatewayProxyResponse, error) {
 	idea, err := h.repo.GetIdeaByID(ctx, ideaID)
 	if err != nil {
 		if errors.Is(err, repository.ErrNotFound) {
@@ -111,7 +111,7 @@ func (h *IdeasHandler) HandleGetIdea(ctx context.Context, ideaID string, session
 
 	// Strictly verify that the idea belongs to the authenticated user.
 	// Mask cross-user probes as 404 to avoid leaking existence or metadata.
-	if idea.UserID != session.UserID {
+	if idea.UserID != user.ID && (user.Email == "" || idea.UserID != user.Email) {
 		return JSONResponse(http.StatusNotFound, models.ErrorResponse{
 			Error:   "NOT_FOUND",
 			Message: "Idea not found.",

@@ -1,8 +1,10 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL || ''
+const rawApiUrl = import.meta.env.VITE_API_URL || ''
+const API_BASE_URL = rawApiUrl.replace(/\/api\/ideas\/?$/, '').replace(/\/$/, '')
 
 export interface UserDTO {
   id: string
   email: string
+  name?: string
 }
 
 export interface AuthSessionResponse {
@@ -121,13 +123,6 @@ export const api = {
   async listIdeas(): Promise<{ ideas: IdeaItem[] }> {
     return request<{ ideas: IdeaItem[] }>('/api/ideas', {
       method: 'GET',
-    })
-  },
-
-  async inviteUser(email: string): Promise<{ success: boolean; message: string; email: string }> {
-    return request<{ success: boolean; message: string; email: string }>('/api/invitations', {
-      method: 'POST',
-      body: JSON.stringify({ email }),
     })
   },
 }

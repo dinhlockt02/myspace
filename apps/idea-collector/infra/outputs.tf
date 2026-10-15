@@ -22,3 +22,18 @@ output "api_gateway_endpoint" {
   value       = aws_apigatewayv2_api.ingestion.api_endpoint
   description = "The HTTP API Gateway endpoint for backend ingestion"
 }
+
+output "cognito_user_pool_id" {
+  value       = aws_cognito_user_pool.main.id
+  description = "The ID of the AWS Cognito User Pool"
+}
+
+output "cognito_user_pool_client_id" {
+  value       = aws_cognito_user_pool_client.client.id
+  description = "The ID of the AWS Cognito User Pool Client"
+}
+
+output "cognito_domain" {
+  value       = aws_cognito_user_pool_domain.main.domain
+  description = "The domain prefix configured for AWS Cognito OAuth endpoints"
+}

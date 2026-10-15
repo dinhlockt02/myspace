@@ -1,0 +1,124 @@
+openapi: 3.0.3
+info:
+  title: Idea Collector Ideas API
+  version: 1.0.0
+  description: OpenAPI contract for submitting and retrieving user-isolated ideas.
+paths:
+  /api/ideas:
+    get:
+      summary: List Ideas for Authenticated User
+      description: |
+        Retrieves all ideas authored by the authenticated user, ordered in reverse chronological order (newest first). Strict multi-tenant isolation ensures only the caller's ideas are returned.
+      security:
+        - CognitoJWT: []
+      responses:
+        '200':
+          description: List of user's ideas.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/IdeaItem'
+        '401':
+          description: Unauthorized; missing or expired Cognito token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    post:
+      summary: Submit a New Idea
+      description: |
+        Creates a new idea associated with the authenticated caller's Cognito user identifier (`sub`).
+      security:
+        - CognitoJWT: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateIdeaRequest'
+      responses:
+        '201':
+          description: Idea created successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IdeaItem'
+        '400':
+          description: Invalid request payload (empty content or exceeding 5,000 characters).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized; missing or expired Cognito token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  securitySchemes:
+    CognitoJWT:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    CreateIdeaRequest:
+      type: object
+      required:
+        - content
+      properties:
+        content:
+          type: string
+          minLength: 1
+          maxLength: 5000
+          example: "Develop an automated task runner for CI/CD."
+        client_timestamp:
+          type: integer
+          format: int64
+          example: 1729000000000
+
+    IdeaItem:
+      type: object
+      required:
+        - id
+        - user_id
+        - content
+        - server_timestamp
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        user_id:
+          type: string
+          format: uuid
+          example: "b2f6b4a1-1234-4567-89ab-cdef01234567"
+        content:
+          type: string
+          example: "Develop an automated task runner for CI/CD."
+        client_timestamp:
+          type: integer
+          format: int64
+          example: 1729000000000
+        server_timestamp:
+          type: integer
+          format: int64
+          example: 1729000000120
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+        - message
+      properties:
+        error:
+          type: string
+          example: "INVALID_REQUEST"
+        message:
+          type: string
+          example: "Idea content cannot be empty."

@@ -1,0 +1,165 @@
+openapi: 3.0.3
+info:
+  title: Idea Collector Authentication & Cognito OAuth API
+  version: 1.0.0
+  description: OpenAPI specification for public Google authentication via AWS Cognito User Pool.
+paths:
+  /oauth2/authorize:
+    get:
+      summary: Initiate Google Federated Sign-In
+      description: |
+        Redirects the browser directly to Google for authentication using Cognito's federated identity provider routing.
+      parameters:
+        - name: response_type
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [code]
+        - name: client_id
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: redirect_uri
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uri
+        - name: identity_provider
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [Google]
+        - name: scope
+          in: query
+          required: true
+          schema:
+            type: string
+            example: "openid email profile"
+        - name: code_challenge
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: code_challenge_method
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [S256]
+      responses:
+        '302':
+          description: Redirects browser directly to Google OAuth consent prompt.
+
+  /oauth2/token:
+    post:
+      summary: Exchange Authorization Code for Cognito JWT Tokens
+      description: |
+        Called by the frontend SPA after Google redirects back with an authorization code. Returns Cognito ID token, Access token, and Refresh token.
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required:
+                - grant_type
+                - client_id
+                - code
+                - redirect_uri
+                - code_verifier
+              properties:
+                grant_type:
+                  type: string
+                  enum: [authorization_code, refresh_token]
+                client_id:
+                  type: string
+                code:
+                  type: string
+                redirect_uri:
+                  type: string
+                  format: uri
+                code_verifier:
+                  type: string
+                refresh_token:
+                  type: string
+      responses:
+        '200':
+          description: Successful authentication and token issuance.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+        '400':
+          description: Invalid authorization code or code_verifier.
+
+  /api/auth/me:
+    get:
+      summary: Get Current Authenticated User Profile
+      description: Returns the user profile attributes extracted from the validated Cognito token.
+      security:
+        - CognitoJWT: []
+      responses:
+        '200':
+          description: User profile details.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfileResponse'
+        '401':
+          description: Unauthorized; token missing or expired.
+
+components:
+  securitySchemes:
+    CognitoJWT:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: AWS Cognito Access or ID Token.
+
+  schemas:
+    TokenResponse:
+      type: object
+      required:
+        - access_token
+        - id_token
+        - token_type
+        - expires_in
+      properties:
+        access_token:
+          type: string
+          description: JWT Access token for API authorization.
+        id_token:
+          type: string
+          description: JWT Identity token containing user profile claims.
+        refresh_token:
+          type: string
+          description: Token used to renew expired sessions.
+        token_type:
+          type: string
+          example: Bearer
+        expires_in:
+          type: integer
+          example: 3600
+
+    UserProfileResponse:
+      type: object
+      required:
+        - user_id
+        - email
+        - name
+      properties:
+        user_id:
+          type: string
+          format: uuid
+          example: "b2f6b4a1-1234-4567-89ab-cdef01234567"
+        email:
+          type: string
+          format: email
+          example: "jane.doe@gmail.com"
+        name:
+          type: string
+          example: "Jane Doe"
