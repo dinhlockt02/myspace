@@ -46,6 +46,7 @@ type GoogleAuthRequest struct {
 type UserDTO struct {
 	ID    string `json:"id"`
 	Email string `json:"email"`
+	Name  string `json:"name,omitempty"`
 }
 
 type AuthSessionResponse struct {
@@ -62,16 +63,6 @@ type UserProfileResponse struct {
 type LogoutResponse struct {
 	Success bool   `json:"success"`
 	Message string `json:"message"`
-}
-
-type InvitationRequest struct {
-	Email string `json:"email"`
-}
-
-type InvitationResponse struct {
-	Success bool   `json:"success"`
-	Message string `json:"message"`
-	Email   string `json:"email"`
 }
 
 type IdeaSubmissionRequest struct {

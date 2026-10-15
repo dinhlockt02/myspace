@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
-import { api, getStoredToken, onSessionExpired, UserDTO } from '../services/api'
+import { authService } from '../services/auth'
+import { onSessionExpired, UserDTO } from '../services/api'
 
 export function useAuth() {
   const [user, setUser] = useState<UserDTO | null>(null)
@@ -8,20 +9,72 @@ export function useAuth() {
   const [isSessionExpired, setIsSessionExpired] = useState<boolean>(false)
 
   const checkAuth = useCallback(async () => {
-    const token = getStoredToken()
-    if (!token) {
-      setUser(null)
-      setLoading(false)
-      return
-    }
-
+    setLoading(true)
     try {
-      setLoading(true)
-      const profile = await api.getProfile()
-      setUser(profile.user)
-      setError(null)
-      setIsSessionExpired(false)
-    } catch {
+      // 1. Check for OAuth code callback in URL query parameters
+      const urlParams = new URLSearchParams(window.location.search)
+      const code = urlParams.get('code')
+      const state = urlParams.get('state')
+      const oauthError = urlParams.get('error_description') || urlParams.get('error')
+
+      if (oauthError) {
+        window.history.replaceState({}, document.title, window.location.pathname)
+        setError(`Authentication was canceled or encountered an issue: ${oauthError}`)
+        setUser(null)
+        setLoading(false)
+        return
+      }
+
+      if (code && state) {
+        window.history.replaceState({}, document.title, window.location.pathname)
+        const claims = await authService.handleCallback(code, state)
+        setUser({
+          id: claims.sub,
+          email: claims.email,
+          name: claims.name,
+        })
+        setError(null)
+        setIsSessionExpired(false)
+        setLoading(false)
+        return
+      }
+
+      // 2. Check existing stored Cognito session
+      const existingUser = authService.getCurrentUser()
+      if (existingUser) {
+        setUser({
+          id: existingUser.sub,
+          email: existingUser.email,
+          name: existingUser.name,
+        })
+        setError(null)
+        setIsSessionExpired(false)
+        setLoading(false)
+        return
+      }
+
+      // 3. Attempt token refresh if refresh token exists
+      const refreshedToken = await authService.refreshTokens()
+      if (refreshedToken) {
+        const refreshedUser = authService.getCurrentUser()
+        if (refreshedUser) {
+          setUser({
+            id: refreshedUser.sub,
+            email: refreshedUser.email,
+            name: refreshedUser.name,
+          })
+          setError(null)
+          setIsSessionExpired(false)
+          setLoading(false)
+          return
+        }
+      }
+
+      setUser(null)
+    } catch (err: unknown) {
+      console.error('Auth verification error:', err)
+      const message = err instanceof Error ? err.message : 'Authentication failed'
+      setError(message)
       setUser(null)
     } finally {
       setLoading(false)
@@ -36,30 +89,10 @@ export function useAuth() {
     })
   }, [checkAuth])
 
-  const loginWithGoogle = async (credential: string) => {
-    setError(null)
-    setLoading(true)
-    try {
-      const res = await api.authenticateWithGoogle(credential)
-      setUser(res.user)
-      setIsSessionExpired(false)
-      return res.user
-    } catch (err: unknown) {
-      const apiErr = err as { error?: string; message?: string }
-      const msg = apiErr.message || 'Authentication failed. Please verify you have an invitation.'
-      setError(msg)
-      throw new Error(msg)
-    } finally {
-      setLoading(false)
-    }
-  }
-
   const logout = async () => {
     setLoading(true)
     try {
-      await api.logout()
-    } catch {
-      // Ignored - local token cleared in api client
+      authService.clearTokens()
     } finally {
       setUser(null)
       setIsSessionExpired(false)
@@ -73,7 +106,6 @@ export function useAuth() {
     error,
     isSessionExpired,
     setIsSessionExpired,
-    loginWithGoogle,
     logout,
     checkAuth,
   }

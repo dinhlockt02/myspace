@@ -4,10 +4,9 @@ import { UserDTO } from '../services/api'
 interface HeaderProps {
   user: UserDTO
   onLogout: () => void
-  onOpenInvite: () => void
 }
 
-export const Header: React.FC<HeaderProps> = ({ user, onLogout, onOpenInvite }) => {
+export const Header: React.FC<HeaderProps> = ({ user, onLogout }) => {
   return (
     <header className="app-header">
       <div className="header-brand">
@@ -16,18 +15,12 @@ export const Header: React.FC<HeaderProps> = ({ user, onLogout, onOpenInvite }) 
       </div>
 
       <div className="header-user-section">
-        <button
-          type="button"
-          className="btn btn-secondary btn-sm"
-          onClick={onOpenInvite}
-          title="Invite a new collaborator to the platform"
-        >
-          ✉️ Invite Collaborator
-        </button>
-
         <div className="user-badge" title={`Signed in as ${user.email}`}>
           <span className="user-icon">👤</span>
-          <span className="user-email">{user.email}</span>
+          <div className="user-info">
+            {user.name && <span className="user-name">{user.name}</span>}
+            <span className="user-email">{user.email}</span>
+          </div>
         </div>
 
         <button

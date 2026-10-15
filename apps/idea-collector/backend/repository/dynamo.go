@@ -213,6 +213,31 @@ func (r *Repository) GetIdeasByUserID(ctx context.Context, userID string) ([]mod
 	return ideas, nil
 }
 
+// GetIdeasByUser retrieves ideas by Cognito sub, and also checks legacy email identifier if present
+func (r *Repository) GetIdeasByUser(ctx context.Context, userID, email string) ([]models.Idea, error) {
+	ideas, err := r.GetIdeasByUserID(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	if email != "" && email != userID {
+		legacyIdeas, err := r.GetIdeasByUserID(ctx, email)
+		if err == nil && len(legacyIdeas) > 0 {
+			seen := make(map[string]bool)
+			for _, it := range ideas {
+				seen[it.ID] = true
+			}
+			for _, it := range legacyIdeas {
+				if !seen[it.ID] {
+					ideas = append(ideas, it)
+					seen[it.ID] = true
+				}
+			}
+		}
+	}
+	return ideas, nil
+}
+
 func (r *Repository) GetIdeaByID(ctx context.Context, ideaID string) (*models.Idea, error) {
 	out, err := r.client.GetItem(ctx, &dynamodb.GetItemInput{
 		TableName: aws.String(r.ideasTableName),

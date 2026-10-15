@@ -1,13 +1,10 @@
-import { useState } from 'react'
 import { useAuth } from './hooks/useAuth'
 import { useIdeas } from './hooks/useIdeas'
 import { useDraft } from './hooks/useDraft'
-import { useInvitations } from './hooks/useInvitations'
 import { Header } from './components/Header'
 import { AuthPrompt } from './components/AuthPrompt'
 import { IdeaForm } from './components/IdeaForm'
 import { IdeaList } from './components/IdeaList'
-import { InviteForm } from './components/InviteForm'
 import { SessionExpiredModal } from './components/SessionExpiredModal'
 import './App.css'
 
@@ -17,7 +14,6 @@ function App() {
     loading: authLoading,
     error: authError,
     isSessionExpired,
-    loginWithGoogle,
     logout,
   } = useAuth()
 
@@ -29,16 +25,6 @@ function App() {
   } = useIdeas(!!user)
 
   const { draft, setDraft, clearDraft } = useDraft()
-
-  const {
-    inviting,
-    error: inviteError,
-    successEmail: inviteSuccessEmail,
-    sendInvitation,
-    resetStatus: resetInviteStatus,
-  } = useInvitations()
-
-  const [isInviteOpen, setIsInviteOpen] = useState(false)
 
   if (authLoading) {
     return (
@@ -53,7 +39,6 @@ function App() {
     return (
       <div className="app-container auth-view">
         <AuthPrompt
-          onSuccess={loginWithGoogle}
           error={authError}
           loading={authLoading}
         />
@@ -66,7 +51,6 @@ function App() {
       <Header
         user={user}
         onLogout={logout}
-        onOpenInvite={() => setIsInviteOpen(true)}
       />
 
       <main className="workspace-main">
@@ -88,19 +72,9 @@ function App() {
         <IdeaList ideas={ideas} loading={ideasLoading} />
       </main>
 
-      <InviteForm
-        isOpen={isInviteOpen}
-        onClose={() => setIsInviteOpen(false)}
-        onInvite={sendInvitation}
-        inviting={inviting}
-        error={inviteError}
-        successEmail={inviteSuccessEmail}
-        onReset={resetInviteStatus}
-      />
-
       <SessionExpiredModal
         isOpen={isSessionExpired}
-        onSuccess={loginWithGoogle}
+        onSuccess={() => window.location.reload()}
       />
     </div>
   )
