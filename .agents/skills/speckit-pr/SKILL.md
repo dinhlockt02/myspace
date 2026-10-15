@@ -1,6 +1,6 @@
 ---
 name: "speckit-pr"
-description: "Manage post-implementation Pull Request workflows: create draft PRs, update descriptions, run pre-flight quality checks, and monitor CI status."
+description: "Manage post-implementation Pull Request workflows: create draft PRs, update descriptions with deployment notes, run pre-flight quality checks, and monitor CI status."
 compatibility: "Requires spec-kit project structure with git and GitHub CLI (gh)"
 metadata:
   author: "myspace-team"
@@ -20,11 +20,12 @@ Optional arguments & flags accepted:
 - `--draft`: Create Pull Request in Draft mode (default).
 - `--ready`, `--publish`: Create or mark Pull Request as Ready for Review.
 - `--notes <text>`: Append custom reviewer notes during update.
+- `--deploy-notes <text>`, `--deployment-notes <text>`: Append custom deployment notes or operational instructions.
 - `--base <branch>`: Target integration base branch (default: `main`).
 
 ## Overview
 
-The `/speckit-pr` skill provides an interactive, conversational slash command companion for developers and AI pairing agents to manage post-implementation GitHub Pull Request workflows (and Merge Request aliases). It delegates to the underlying repository CLI (`./scripts/pr-workflow.sh`), enforces Monorepo Constitution Principle I & III, and formats responses with direct links to the created PR.
+The `/speckit-pr` skill provides an interactive, conversational slash command companion for developers and AI pairing agents to manage post-implementation GitHub Pull Request workflows (and Merge Request aliases). It delegates to the underlying repository CLI (`./scripts/pr-workflow.sh`), enforces Monorepo Constitution Principle I, II & III (Intent, Scope, Verification Steps, Deployment Notes, Pre-Flight Gates), and formats responses with direct links to the created PR.
 
 ## Execution Steps
 
@@ -55,7 +56,7 @@ The `/speckit-pr` skill provides an interactive, conversational slash command co
 4. **Handle Outcomes**:
    - **On Success**:
      - **Created**: Present a formatted summary highlighting the PR number, Draft status, affected monorepo projects, and a clickable Markdown link to the PR URL.
-     - **Updated**: Report that the PR description, completed task checklist, and reviewer notes were refreshed.
+     - **Updated**: Report that the PR description, completed task checklist, reviewer notes, and deployment notes were refreshed.
      - **Status**: Display a clean status table showing active GitHub Actions workflows, check conclusions, and mergeability.
      - **Checked**: Confirm that all quality gates (git cleanliness, linting, tests, secrets audit) passed.
    - **On Failure**:

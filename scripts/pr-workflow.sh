@@ -32,6 +32,7 @@ FLAG_READY=false
 BASE_BRANCH="main"
 CUSTOM_TITLE=""
 CUSTOM_NOTES=""
+CUSTOM_DEPLOY_NOTES=""
 FLAG_JSON=false
 
 show_help() {
@@ -53,6 +54,8 @@ OPTIONS:
   --base <branch>    Set target integration branch (default: main)
   --title <text>     Custom PR title (overrides auto-generated title)
   --notes <text>     Append custom reviewer notes/highlights during update
+  --deploy-notes <text>, --deployment-notes <text>
+                     Custom deployment notes or operational instructions
   --json             Output machine-readable JSON payload
   --help, -h         Show this help message
 
@@ -103,6 +106,10 @@ while [[ $# -gt 0 ]]; do
             shift
             CUSTOM_NOTES="$1"
             ;;
+        --deploy-notes|--deployment-notes)
+            shift
+            CUSTOM_DEPLOY_NOTES="$1"
+            ;;
         --json)
             FLAG_JSON=true
             ;;
@@ -126,12 +133,14 @@ execute_pr_create() {
     local base="$2"
     local is_draft="$3"
     local custom_title="$4"
-    local is_json="$5"
+    local custom_notes="$5"
+    local custom_deploy_notes="$6"
+    local is_json="$7"
 
     local title
     title=$(generate_pr_title "$branch" "$custom_title")
     local body
-    body=$(generate_pr_body "$branch" "$base")
+    body=$(generate_pr_body "$branch" "$base" "$custom_notes" "$custom_deploy_notes")
 
     create_github_pr "$branch" "$base" "$title" "$body" "$is_draft" "$is_json"
 }
@@ -140,7 +149,8 @@ execute_pr_update() {
     local branch="$1"
     local base="$2"
     local custom_notes="$3"
-    local is_json="$4"
+    local custom_deploy_notes="$4"
+    local is_json="$5"
 
     if ! check_existing_pr "$branch" "$base"; then
         if ! $is_json; then log_error "No active open PR found for branch ${branch} to update."; fi
@@ -152,7 +162,7 @@ execute_pr_update() {
         title="$CUSTOM_TITLE"
     fi
     local body
-    body=$(generate_pr_body "$branch" "$base" "$custom_notes")
+    body=$(generate_pr_body "$branch" "$base" "$custom_notes" "$custom_deploy_notes")
 
     update_github_pr "$EXISTING_PR_NUMBER" "$title" "$body" "$is_json"
 }
@@ -227,9 +237,9 @@ run_pr_workflow() {
             # 3. Create or fallback to update if PR already exists
             if check_existing_pr "$branch" "$BASE_BRANCH"; then
                 if ! $FLAG_JSON; then log_info "PR already exists for ${branch}; updating existing PR..."; fi
-                execute_pr_update "$branch" "$BASE_BRANCH" "$CUSTOM_NOTES" "$FLAG_JSON"
+                execute_pr_update "$branch" "$BASE_BRANCH" "$CUSTOM_NOTES" "$CUSTOM_DEPLOY_NOTES" "$FLAG_JSON"
             else
-                execute_pr_create "$branch" "$BASE_BRANCH" "$FLAG_DRAFT" "$CUSTOM_TITLE" "$FLAG_JSON"
+                execute_pr_create "$branch" "$BASE_BRANCH" "$FLAG_DRAFT" "$CUSTOM_TITLE" "$CUSTOM_NOTES" "$CUSTOM_DEPLOY_NOTES" "$FLAG_JSON"
             fi
             ;;
         update)
@@ -240,7 +250,7 @@ run_pr_workflow() {
             push_current_branch "$branch" "$FLAG_JSON" || exit 3
 
             # 3. Execute update
-            execute_pr_update "$branch" "$BASE_BRANCH" "$CUSTOM_NOTES" "$FLAG_JSON"
+            execute_pr_update "$branch" "$BASE_BRANCH" "$CUSTOM_NOTES" "$CUSTOM_DEPLOY_NOTES" "$FLAG_JSON"
             ;;
         status)
             execute_pr_status "$branch" "$BASE_BRANCH" "$FLAG_JSON"
