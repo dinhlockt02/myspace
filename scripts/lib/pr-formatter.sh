@@ -39,11 +39,11 @@ detect_active_feature_dir() {
         [ -n "$feat_dir" ] && candidates+=("$(basename "$feat_dir")")
     fi
 
-    candidates+=("$branch" "${branch##*/}")
-
-    local touched
-    touched=$(get_branch_changed_files "$base" | grep -oE '^specs/[^/]+' | head -n 1 | cut -d/ -f2 || echo "")
-    [ -n "$touched" ] && candidates+=("$touched")
+    # Every spec directory is a candidate; feature.json is only checked first as a hint
+    local d
+    for d in "${REPO_ROOT}/specs/"*/; do
+        [ -d "$d" ] && candidates+=("$(basename "$d")")
+    done
 
     local name
     for name in "${candidates[@]}"; do
@@ -130,6 +130,7 @@ generate_pr_title() {
     IFS='/' read -r -a parts <<< "$branch"
     case "${parts[0]}" in
         feat|fix|chore|docs|refactor|test|ci|infra|req) type="${parts[0]}" ;;
+        [0-9]*) type="feat" ;;  # Spec Kit feature branch: NNN-description
     esac
     if [ "${#parts[@]}" -ge 3 ]; then
         scope="${parts[1]}"
