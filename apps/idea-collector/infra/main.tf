@@ -293,6 +293,7 @@ resource "aws_lambda_function" "ingestion" {
       TABLE_NAME            = aws_dynamodb_table.ideas.name
       COGNITO_USER_POOL_ID  = aws_cognito_user_pool.main.id
       COGNITO_APP_CLIENT_ID = aws_cognito_user_pool_client.client.id
+      GOOGLE_CLIENT_ID      = var.google_client_id
     }
   }
 }

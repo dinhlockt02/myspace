@@ -15,6 +15,14 @@
 - Agents must run lint, typecheck, and tests before opening a PR
 - No speculative changes — only implement what the task explicitly requires
 
+## Branch naming
+
+- Never code on `main`/`master`; agents must ask for a branch name before making changes
+- Format: `<type>/<description>` or `<type>/<scope>/<description>`; types: `feat`, `fix`, `chore`, `docs`, `refactor`, `test`, `ci`, `infra`, `req`; scope (optional) is a project directory or `infra`/`shared`/`ci`
+- Spec Kit branches may use `NNN-<description>`
+- Lowercase kebab-case (`a-z`, `0-9`, `-`), description 3-50 chars; reserved: `main`, `master`, `develop`, `HEAD`, `release/*`
+- Enforced by `.claude/hooks/require_feature_branch.py` (rules in `.claude/hooks/branch_policy.py`); Spec Kit skills validate too
+
 ## Infra conventions
 
 - Terraform for all AWS resources; no manual console changes
