@@ -1,18 +1,3 @@
-<!--
-Sync Impact Report:
-- Version change: [CONSTITUTION_VERSION] -> 1.0.0
-- Modified principles:
-  - [PRINCIPLE_1_NAME] -> I. AI-Native SDLC Pipeline
-  - [PRINCIPLE_2_NAME] -> II. Infrastructure as Code (IaC) & Remote State
-  - [PRINCIPLE_3_NAME] -> III. Automated Quality & CI/CD Gates
-  - [PRINCIPLE_4_NAME] -> IV. Strict Security & Credential Handling
-  - [PRINCIPLE_5_NAME] -> V. Codebase Respect & Localization
-- Added sections:
-  - Repository Structure
-  - Agent Constraints
-- Removed sections: None
-- Deferred items/TODOs: None
--->
 # Myspace Monorepo Constitution
 
 ## Core Principles
@@ -32,6 +17,9 @@ Under no circumstances may secrets, credentials, or sensitive data be committed 
 ### V. Codebase Respect & Localization
 Agents MUST follow the existing code style in each project and MUST NOT reformat unrelated code. Scope creep is not allowed; changes should be strictly limited to the task at hand.
 
+### VI. Branch Discipline & Naming
+Code changes MUST NOT be made or committed on `main` or `master`. Before changing anything, agents MUST ask the user for a branch name and create it. Branch names MUST be `<type>/<description>` or `<type>/<scope>/<description>`, where type is one of `feat`, `fix`, `chore`, `docs`, `refactor`, `test`, `ci`, `infra`, `req` and scope is optional; Spec Kit branches MAY use `NNN-<description>`. Descriptions and scopes MUST be lowercase kebab-case, and descriptions MUST be 3-50 characters. `main`, `master`, `develop`, `HEAD` and `release/*` are reserved. This is enforced by the PreToolUse hook `.claude/hooks/require_feature_branch.py` (rules in `.claude/hooks/branch_policy.py`) and by the Spec Kit skills. Rationale: every change is reviewed through a PR, and consistent names make the monorepo history and CI scoping legible.
+
 ## Repository Structure
 
 - **Infrastructure**: `infra/` (Terraform, AWS, Kubernetes manifests)
@@ -43,6 +31,7 @@ Agents MUST follow the existing code style in each project and MUST NOT reformat
 
 - Agents MUST NOT modify CI/CD workflows without explicit instruction.
 - Agents MUST NOT change infrastructure state without explicit instruction.
+- Agents MUST NOT code on `main`/`master`; they MUST ask for a branch name that satisfies Principle VI.
 - Agents MUST ensure that all code compiles, type-checks, and passes tests before a PR is opened.
 
 ## Governance
@@ -53,4 +42,4 @@ This Constitution acts as the source of truth for the Myspace Monorepo developme
 - Amendments to this constitution require a clear rationale, incrementing the semantic version, and an update to the Last Amended date.
 - Code reviewers (human or agent) MUST use these principles as the basis for evaluating PRs.
 
-**Version**: 1.0.0 | **Ratified**: 2026-09-29 | **Last Amended**: 2026-09-29
+**Version**: 1.1.0 | **Ratified**: 2026-09-29 | **Last Amended**: 2026-10-18
