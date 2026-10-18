@@ -222,6 +222,12 @@ resource "aws_cognito_user_pool" "main" {
     required            = false
     mutable             = true
   }
+
+  # Cognito does not allow schema attributes to be modified or removed after
+  # creation, and AWS reports extra defaults that show up as drift.
+  lifecycle {
+    ignore_changes = [schema]
+  }
 }
 
 resource "aws_cognito_identity_provider" "google" {
