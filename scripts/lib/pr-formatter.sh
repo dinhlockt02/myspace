@@ -1,36 +1,61 @@
 #!/usr/bin/env bash
 # scripts/lib/pr-formatter.sh - Synthesis of PR title, description, scope, and verification steps
 
-detect_active_feature_dir() {
-    local branch
-    branch=$(get_current_git_branch)
+# Succeeds if a specs/ directory name belongs to the given branch: the names match, the
+# numeric prefix (NNN) appears in the branch, or the branch changes files under that spec.
+feature_matches_branch() {
+    local name="$1" branch="$2" base="$3"
+    local leaf="${branch##*/}"
 
-    # 1. Check .specify/feature.json
+    if [ "$name" = "$branch" ] || [ "$name" = "$leaf" ]; then
+        return 0
+    fi
+
+    local num="${name%%-*}"
+    if [[ "$num" =~ ^[0-9]+$ ]] && [[ "$branch" =~ (^|[/-])${num}($|[/-]) ]]; then
+        return 0
+    fi
+
+    if get_branch_changed_files "$base" | grep -q "^specs/${name}/"; then
+        return 0
+    fi
+
+    return 1
+}
+
+# Prints the specs/ directory this branch is working on, or nothing if there is none.
+# A stale .specify/feature.json or the newest spec must never be assumed to be the active
+# feature, otherwise unrelated PRs inherit another feature's intent and task list.
+detect_active_feature_dir() {
+    local branch base
+    branch=$(get_current_git_branch)
+    base="${1:-${BASE_BRANCH:-main}}"
+
+    local -a candidates=()
+
     if [ -f "${REPO_ROOT}/.specify/feature.json" ]; then
         local feat_dir
         feat_dir=$(grep -o '"feature_directory": *"[^"]*' "${REPO_ROOT}/.specify/feature.json" | cut -d'"' -f4 || echo "")
-        if [ -n "$feat_dir" ] && [ -d "${REPO_ROOT}/${feat_dir}" ]; then
-            echo "${REPO_ROOT}/${feat_dir}"
+        [ -n "$feat_dir" ] && candidates+=("$(basename "$feat_dir")")
+    fi
+
+    # Every spec directory is a candidate; feature.json is only checked first as a hint
+    local d
+    for d in "${REPO_ROOT}/specs/"*/; do
+        [ -d "$d" ] && candidates+=("$(basename "$d")")
+    done
+
+    local name
+    for name in "${candidates[@]}"; do
+        [ -n "$name" ] && [ -d "${REPO_ROOT}/specs/${name}" ] || continue
+        if feature_matches_branch "$name" "$branch" "$base"; then
+            echo "${REPO_ROOT}/specs/${name}"
             return 0
         fi
-    fi
-
-    # 2. Check specs/<branch>
-    if [ -d "${REPO_ROOT}/specs/${branch}" ]; then
-        echo "${REPO_ROOT}/specs/${branch}"
-        return 0
-    fi
-
-    # 3. Fallback: most recent directory in specs/
-    local latest
-    latest=$(ls -td "${REPO_ROOT}/specs/"*/ 2>/dev/null | head -n 1 || echo "")
-    if [ -n "$latest" ]; then
-        echo "${latest%/}"
-        return 0
-    fi
+    done
 
     echo ""
-    return 1
+    return 0
 }
 
 get_affected_monorepo_projects() {
@@ -72,6 +97,7 @@ get_affected_monorepo_projects() {
 generate_pr_title() {
     local branch="$1"
     local custom_title="$2"
+    local base="${BASE_BRANCH:-main}"
 
     if [ -n "$custom_title" ]; then
         echo "$custom_title"
@@ -79,7 +105,7 @@ generate_pr_title() {
     fi
 
     local feat_dir
-    feat_dir=$(detect_active_feature_dir)
+    feat_dir=$(detect_active_feature_dir "$base")
     if [ -n "$feat_dir" ] && [ -f "${feat_dir}/spec.md" ]; then
         local raw_title
         raw_title=$(grep -m 1 "^# Feature Specification:" "${feat_dir}/spec.md" | sed 's/^# Feature Specification: *//' || echo "")
@@ -89,10 +115,32 @@ generate_pr_title() {
         fi
     fi
 
-    # Fallback to branch name formatted as conventional commit
-    local clean_branch
-    clean_branch=$(echo "$branch" | sed -E 's/^[0-9]+-//; s/-/ /g')
-    echo "feat: ${clean_branch}"
+    # A single commit already has a conventional subject
+    local mb count
+    mb=$(git merge-base "$base" HEAD 2>/dev/null || echo "$base")
+    count=$(git rev-list --count "${mb}..HEAD" 2>/dev/null || echo 0)
+    if [ "$count" = "1" ]; then
+        git log -1 --format=%s
+        return 0
+    fi
+
+    # Otherwise derive "<type>(<scope>): <description>" from the branch name
+    local type="chore" scope="" desc
+    local -a parts
+    IFS='/' read -r -a parts <<< "$branch"
+    case "${parts[0]}" in
+        feat|fix|chore|docs|refactor|test|ci|infra|req) type="${parts[0]}" ;;
+        [0-9]*) type="feat" ;;  # Spec Kit feature branch: NNN-description
+    esac
+    if [ "${#parts[@]}" -ge 3 ]; then
+        scope="${parts[1]}"
+    fi
+    desc=$(echo "${parts[${#parts[@]}-1]}" | sed -E 's/^[0-9]+-//; s/-/ /g')
+    if [ -n "$scope" ]; then
+        echo "${type}(${scope}): ${desc}"
+    else
+        echo "${type}: ${desc}"
+    fi
 }
 
 generate_deployment_notes() {
@@ -177,6 +225,36 @@ generate_deployment_notes() {
     fi
 }
 
+# Verification commands for the projects a branch touches.
+generate_verification_steps() {
+    local base="$1"
+    local steps="" n=0 proj
+    while IFS= read -r proj; do
+        [ -z "$proj" ] && continue
+        local cmds=""
+        case "$proj" in
+            apps/idea-collector/frontend)
+                cmds="pnpm nx run idea-collector-frontend:lint"$'\n'"pnpm nx run idea-collector-frontend:build" ;;
+            apps/idea-collector/backend)
+                cmds="cd apps/idea-collector/backend && go vet ./... && go test ./..." ;;
+            apps/idea-collector/infra)
+                cmds="pnpm nx run idea-collector-infra:validate"$'\n'"pnpm nx run idea-collector-infra:plan" ;;
+            scripts)
+                cmds="bash -n scripts/*.sh scripts/lib/*.sh" ;;
+            *) continue ;;
+        esac
+        n=$((n + 1))
+        steps="${steps}${n}. **\`${proj}\`**:"$'\n'"   \`\`\`bash"$'\n'
+        while IFS= read -r c; do steps="${steps}   ${c}"$'\n'; done <<< "$cmds"
+        steps="${steps}   \`\`\`"$'\n'
+    done < <(get_affected_monorepo_projects "$base")
+
+    if [ -z "$steps" ]; then
+        steps="1. Review the diff and the CI checks on this pull request."$'\n'
+    fi
+    printf '%s' "${steps%$'\n'}"
+}
+
 generate_pr_body() {
     local branch="$1"
     local base="$2"
@@ -184,10 +262,10 @@ generate_pr_body() {
     local custom_deploy_notes="$4"
 
     local feat_dir
-    feat_dir=$(detect_active_feature_dir)
-    local feat_id="general"
-    local spec_rel="specs/"
-    local intent="Implementation updates across monorepo projects."
+    feat_dir=$(detect_active_feature_dir "$base")
+    local feat_id=""
+    local spec_rel=""
+    local intent=""
     local tasks_list=""
 
     if [ -n "$feat_dir" ]; then
@@ -196,11 +274,7 @@ generate_pr_body() {
 
         # Extract Intent from spec.md
         if [ -f "${feat_dir}/spec.md" ]; then
-            local spec_intent
-            spec_intent=$(grep -A 2 -m 1 "### User Story 1" "${feat_dir}/spec.md" | tail -n 1 || echo "")
-            if [ -n "$spec_intent" ]; then
-                intent="$spec_intent"
-            fi
+            intent=$(grep -A 2 -m 1 "### User Story 1" "${feat_dir}/spec.md" | tail -n 1 || echo "")
         fi
 
         # Extract completed tasks from tasks.md
@@ -209,9 +283,22 @@ generate_pr_body() {
         fi
     fi
 
-    if [ -z "$tasks_list" ]; then
-        tasks_list="- [x] Complete feature implementation and verify local tests"
+    # Commits on this branch (oldest first)
+    local mb
+    mb=$(git merge-base "$base" HEAD 2>/dev/null || echo "$base")
+    local commit_list
+    commit_list=$(git log --reverse --format='- %s' "${mb}..HEAD" 2>/dev/null || echo "")
+
+    # Without a matching spec, the intent is the oldest commit's message body (or subject)
+    if [ -z "$intent" ]; then
+        local first
+        first=$(git log --reverse --format='%H' "${mb}..HEAD" 2>/dev/null | head -n 1)
+        if [ -n "$first" ]; then
+            intent=$(git log -1 --format=%b "$first" | grep -v '^Co-Authored-By:' | awk 'BEGIN{RS=""} NR==1{gsub(/\n/," "); print}')
+            [ -z "$intent" ] && intent=$(git log -1 --format=%s "$first")
+        fi
     fi
+    [ -z "$intent" ] && intent="Implementation updates across monorepo projects."
 
     # Affected projects list
     local affected_str=""
@@ -220,15 +307,26 @@ generate_pr_body() {
     done < <(get_affected_monorepo_projects "$base")
     [ -z "$affected_str" ] && affected_str="  - \`monorepo\`"$'\n'
 
-    # Build Verification steps based on affected projects
-    local verify_str="1. **Host & Pre-Flight Checks**:"$'\n'
-    verify_str="${verify_str}   \`\`\`bash"$'\n'
-    verify_str="${verify_str}   pnpm run setup -- --check-only"$'\n'
-    verify_str="${verify_str}   \`\`\`"$'\n'
-    verify_str="${verify_str}2. **Verification Smoke Tests**:"$'\n'
-    verify_str="${verify_str}   \`\`\`bash"$'\n'
-    verify_str="${verify_str}   pnpm run setup -- --verify"$'\n'
-    verify_str="${verify_str}   \`\`\`"
+    # Feature lines only when this branch belongs to a spec
+    local scope_str=""
+    if [ -n "$feat_id" ]; then
+        scope_str="- **Feature ID**: \`${feat_id}\`
+- **Specification**: [\`${spec_rel}\`](${spec_rel})
+"
+    fi
+    scope_str="${scope_str}- **Affected Monorepo Projects**:
+${affected_str}"
+
+    # Completed tasks (spec branches) or the branch's commits
+    local changes_heading="📦 Changes" changes_body="$commit_list"
+    if [ -n "$tasks_list" ]; then
+        changes_heading="✅ Completed Tasks"
+        changes_body="$tasks_list"
+    fi
+    [ -z "$changes_body" ] && changes_body="- See the diff."
+
+    local verify_str
+    verify_str=$(generate_verification_steps "$base")
 
     # Build Deployment Notes
     local deploy_notes
@@ -243,15 +341,12 @@ ${intent}
 
 ## 🔍 Scope & Touched Projects
 
-- **Feature ID**: \`${feat_id}\`
-- **Specification**: [\`${spec_rel}\`](${spec_rel})
-- **Affected Monorepo Projects**:
-${affected_str}
+${scope_str}
 ---
 
-## ✅ Completed Tasks
+## ${changes_heading}
 
-${tasks_list}
+${changes_body}
 
 ---
 
@@ -271,9 +366,11 @@ ${deploy_notes}
 
 ## 🛡️ Pre-Flight Quality Gates
 
+Run by \`scripts/pr-workflow.sh\` before this PR was opened:
+
 - [x] **Git Cleanliness**: Working tree verified clean
-- [x] **Linting & Typecheck**: Clean pass across affected packages
-- [x] **Test Suites**: Baseline and integration smoke tests passing
+- [x] **Linting**: \`nx run-many -t lint\` passed
+- [x] **Tests**: Backend \`go test ./...\` passed
 - [x] **Secret Audit**: Diff verified free of credentials, tokens, and keys
 
 ---
