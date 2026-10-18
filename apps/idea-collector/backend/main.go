@@ -108,30 +108,23 @@ func handleRequest(ctx context.Context, req events.APIGatewayProxyRequest) (even
 }
 
 func extractUserFromRequest(ctx context.Context, req events.APIGatewayProxyRequest) (*models.UserDTO, error) {
-	// 1. Check API Gateway HTTP API v2 JWT Authorizer claims
-	if req.RequestContext.Authorizer != nil {
-		if jwtObj, ok := req.RequestContext.Authorizer["jwt"].(map[string]interface{}); ok {
+	// 1. Check API Gateway JWT Authorizer claims. The location depends on the integration's
+	// payload format: "claims" for 1.0, "jwt.claims" for 2.0.
+	if authorizer := req.RequestContext.Authorizer; authorizer != nil {
+		if claims, ok := authorizer["claims"].(map[string]interface{}); ok {
+			if user := userFromClaims(claims); user != nil {
+				return user, nil
+			}
+		}
+		if jwtObj, ok := authorizer["jwt"].(map[string]interface{}); ok {
 			if claims, ok := jwtObj["claims"].(map[string]interface{}); ok {
-				sub, _ := claims["sub"].(string)
-				email, _ := claims["email"].(string)
-				name, _ := claims["name"].(string)
-				if sub != "" {
-					return &models.UserDTO{
-						ID:    sub,
-						Email: email,
-						Name:  name,
-					}, nil
+				if user := userFromClaims(claims); user != nil {
+					return user, nil
 				}
 			}
 		}
-		if sub, ok := req.RequestContext.Authorizer["sub"].(string); ok && sub != "" {
-			email, _ := req.RequestContext.Authorizer["email"].(string)
-			name, _ := req.RequestContext.Authorizer["name"].(string)
-			return &models.UserDTO{
-				ID:    sub,
-				Email: email,
-				Name:  name,
-			}, nil
+		if user := userFromClaims(authorizer); user != nil {
+			return user, nil
 		}
 	}
 
@@ -154,6 +147,17 @@ func extractUserFromRequest(ctx context.Context, req events.APIGatewayProxyReque
 	}
 
 	return nil, errors.New("missing or invalid authorization credentials")
+}
+
+// userFromClaims builds a user from JWT claims, or returns nil if there is no subject.
+func userFromClaims(claims map[string]interface{}) *models.UserDTO {
+	sub, _ := claims["sub"].(string)
+	if sub == "" {
+		return nil
+	}
+	email, _ := claims["email"].(string)
+	name, _ := claims["name"].(string)
+	return &models.UserDTO{ID: sub, Email: email, Name: name}
 }
 
 func extractBearerToken(req events.APIGatewayProxyRequest) string {

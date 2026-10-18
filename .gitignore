@@ -42,3 +42,7 @@ main
 .cache/
 .tmp/
 .specify/reports/
+
+# Lambda build output (built in CI by .github/actions/idea-collector/dependencies)
+apps/idea-collector/backend/bootstrap
+apps/idea-collector/backend/function.zip
