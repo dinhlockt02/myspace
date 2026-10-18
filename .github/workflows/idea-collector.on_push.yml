@@ -54,8 +54,8 @@ jobs:
       - id: apply
         shell: bash
         env:
-          TF_VAR_google_client_id: ${{ secrets.GOOGLE_CLIENT_ID }}
-          TF_VAR_google_client_secret: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          TF_VAR_google_client_id: ${{ secrets.TF_VAR_GOOGLE_CLIENT_ID }}
+          TF_VAR_google_client_secret: ${{ secrets.TF_VAR_GOOGLE_CLIENT_SECRET }}
         run: pnpm nx run idea-collector-infra:apply
 
       - id: outputs
