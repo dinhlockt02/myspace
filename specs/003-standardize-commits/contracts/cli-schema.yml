@@ -1,0 +1,148 @@
+# CLI Schema: scripts/commit-workflow.sh
+name: commit-workflow.sh
+description: Inspect staged changes, propose and validate Conventional Commits messages, and create the commit.
+usage: ./scripts/commit-workflow.sh <command> [options]   # also: pnpm run commit -- <command> [options]
+
+global_options:
+  --json:
+    type: boolean
+    default: false
+    description: Emit one machine-readable JSON object on stdout (no jq required). Human text goes to stderr.
+
+global_exit_codes:
+  64: Usage error (missing or unknown command, or invalid flags). Distinct from 1, which means an invalid commit message.
+
+commands:
+  propose:
+    description: Read-only. Analyse the staged set and print a proposal. Never modifies the index or history.
+    options:
+      --type <type>:
+        type: string
+        optional: true
+        description: Force the type instead of the heuristic.
+      --scope <scope>:
+        type: string
+        optional: true
+        description: Force the scope (use "none" for no scope).
+      --summary <text>:
+        type: string
+        optional: true
+        description: Supply the summary; the proposal header is built and validated around it.
+      --allow-sensitive <path>:
+        type: string
+        repeatable: true
+        description: Allow one specific staged sensitive path so a proposal can be produced for it (for example the tracked frontend .env). Clears only sensitive-path findings, never credential-content findings. The same path must be passed again to commit.
+    exit_codes:
+      0: Proposal produced (warnings may be present)
+      2: Nothing staged
+      3: Blocked by safety findings that are not allowed (a sensitive path without --allow-sensitive, or any credential-content match)
+      4: Protected branch (main/master)
+
+  validate:
+    description: Validate a message without touching git state.
+    arguments:
+      "<message | --file path | ->": The message text, a file, or stdin.
+    exit_codes:
+      0: Valid (no error-level issues; warning-level issues may be listed)
+      1: One or more error-level validation issues (all issues, including warnings, are listed)
+
+  commit:
+    description: Re-validate, re-run safety checks, then create the commit from the staged set only.
+    options:
+      --message <text>:
+        type: string
+        description: Full message. Alternative to --file or stdin.
+      --file <path>:
+        type: string
+        description: Read the message from a file.
+      --breaking <text>:
+        type: string
+        optional: true
+        description: Marks the commit breaking; adds "!" to the header and a BREAKING CHANGE footer.
+      --no-breaking:
+        type: boolean
+        description: Explicitly confirm that a flagged change is not breaking.
+      --trailer <"Key: value">:
+        type: string
+        repeatable: true
+        description: Footer line, for example the required Co-Authored-By attribution.
+      --allow-sensitive <path>:
+        type: string
+        repeatable: true
+        description: Allow one specific staged sensitive path. Never allows secret patterns.
+      --yes:
+        type: boolean
+        default: false
+        description: Required when stdin is not a terminal. Means the contributor has seen and confirmed this exact final message, including any edits. Callers (the skill, an agent) must never pass it without having shown the message and received that confirmation.
+    guarantees:
+      - never runs git add, git commit -a, --amend or --no-verify
+      - commits exactly the staged set
+      - exits without committing if the message differs from what validate accepts
+    exit_codes:
+      0: Committed
+      1: Message invalid
+      2: Nothing staged
+      3: Blocked by safety findings
+      4: Protected branch (main/master)
+      5: Confirmation missing (non-interactive without --yes)
+      6: Breaking-change decision required (hint present, neither --breaking nor --no-breaking)
+      7: Git refused the commit (hook failure, unresolved conflict)
+
+json_schemas:
+  propose:
+    status: ok | blocked | empty | error
+    error: string | null     # for example "protected-branch" when status is error
+    branch: string
+    git_state: normal | merge | rebase | cherry-pick
+    staged_count: integer
+    unstaged_count: integer
+    files:
+      - path: string
+        status: A | M | D | R
+        scope: string
+        category: source | test | docs | ci | build | config | lockfile | other
+    proposal:
+      type: string | null
+      type_candidates: [string]
+      scope: string | null
+      summary: string | null
+      header: string | null
+      message: string | null   # the header, or the prepared merge message while a merge/rebase is in progress
+      breaking_hints: [string]
+    warnings: [string]
+    safety_findings:
+      - kind: sensitive-path | secret-pattern
+        path: string
+        rule: string
+        overridable: boolean
+        allowed: boolean        # true when cleared by --allow-sensitive
+    split_suggestion:
+      - scope: string
+        files: [string]
+  validate:
+    valid: boolean            # true when there are no error-level issues
+    issues:
+      - rule: string
+        severity: error | warning
+        detail: string
+        suggestion: string | null
+  commit:
+    status: committed | error
+    hash: string
+    header: string
+    validation_warnings:     # warning-level validation issues; they never block the commit
+      - rule: string
+        detail: string
+        suggestion: string | null
+    safety_findings:         # present only when blocked (exit 3); same shape as propose
+      - kind: sensitive-path | secret-pattern
+        path: string
+        rule: string
+        overridable: boolean
+        allowed: boolean
+    issues:                  # present only when the message is invalid (exit 1); same shape as validate
+      - rule: string
+        severity: error | warning
+        detail: string
+        suggestion: string | null
+    error: string | null

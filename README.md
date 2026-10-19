@@ -54,6 +54,7 @@ Work follows [Spec Kit](https://github.com/github/spec-kit). Use the slash comma
 2. `/speckit-plan`, `/speckit-tasks`, `/speckit-analyze`: plan and break down the work
 3. `/speckit-implement`: build the tasks
 4. `/speckit-pr`: create, update and monitor the pull request (`pnpm run pr` runs the same CLI)
+5. `/speckit-commit`: write a validated Conventional Commits message for the staged changes and commit it (`pnpm run commit` runs the same CLI)
 
 The principles that govern all of this live in the
 [constitution](.specify/memory/constitution.md).

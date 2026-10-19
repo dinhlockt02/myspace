@@ -76,7 +76,7 @@ When a contributor inputs a custom commit message or edits a draft manually, the
 
 - **Unstaged Changes Present**: When both staged and unstaged modifications exist simultaneously, the system operates exclusively on staged changes without disturbing unstaged work, while informing the contributor that unstaged changes exist.
 - **Merge or Rebase in Progress**: When an ongoing merge or rebase is detected, the system warns the contributor and ensures standard merge or resolution commit conventions are preserved.
-- **Accidental Inclusion of Credentials or Sensitive Files**: If staged files include common sensitive patterns (such as secret keys, credentials, or environment files), the system flags a warning and halts commit execution to prevent accidental credential leakage into git history.
+- **Accidental Inclusion of Credentials or Sensitive Files**: If staged files include common sensitive patterns (such as secret keys, credentials, or environment files), the system flags a warning and halts commit execution to prevent accidental credential leakage into git history. A sensitive file *path* (for example a deliberately tracked public-configuration `.env`) may proceed only after the contributor explicitly allows that specific path; content that matches a credential or private-key pattern is never overridable.
 - **Massive Changesets (e.g., Lockfile or Dependency Updates)**: When large automated changesets are staged, the system classifies them appropriately (e.g., dependency update chore) without truncating essential context.
 - **Empty Commit Messages or Whitespace Only**: The system rejects empty or whitespace-only messages and requires a valid summary before executing any commit.
 
@@ -85,35 +85,35 @@ When a contributor inputs a custom commit message or edits a draft manually, the
 ### Functional Requirements
 
 - **FR-001**: System MUST enforce Conventional Commits formatting (`type(scope): description`) for all created and validated commit messages.
-- **FR-002**: System MUST support standard change categories: `feat`, `fix`, `chore`, `docs`, `style`, `refactor`, `perf`, `test`, `build`, and `ci`.
+- **FR-002**: System MUST support standard change categories: `feat`, `fix`, `chore`, `docs`, `style`, `refactor`, `perf`, `test`, `build`, and `ci`, plus two repository-specific categories: `req` for adding or changing requirement specifications (`spec.md` and `checklists/requirements.md` under `specs/`) and `infra` for infrastructure-definition changes (Terraform and other IaC).
 - **FR-003**: System MUST identify the relevant monorepo scope based on affected file paths (e.g., application name, infrastructure, shared tooling, or CI workflow).
 - **FR-004**: System MUST verify the git staging area and cleanly handle scenarios where no files are staged by providing actionable guidance.
 - **FR-005**: System MUST present proposed commit messages to the contributor for review and confirmation before committing changes to the branch.
 - **FR-006**: System MUST allow contributors to edit, customize, or supply their own commit messages subject to format validation.
 - **FR-007**: System MUST validate commit message structure, enforcing summary character limits (under 100 characters), imperative mood phrasing, and absence of trailing punctuation in the header.
 - **FR-008**: System MUST support prominent flags and structured footer notes for breaking changes.
-- **FR-009**: System MUST inspect staged changes for potentially sensitive data (credentials, secret keys, or environment files) and warn the contributor prior to finalizing the commit.
+- **FR-009**: System MUST inspect staged changes for potentially sensitive data (credentials, secret keys, or environment files) and block the commit when any is found, using the sensitive-path and credential-format patterns defined in the feature's safety rules (`contracts/safety-rules.md`). The contributor MAY explicitly allow a specific sensitive file path; content matching a credential or private-key pattern MUST NOT be overridable.
 - **FR-010**: System MUST be accessible as an on-demand workflow skill for both human contributors and autonomous AI agents in this repository.
 
 ### Key Entities
 
 - **Commit Proposal**: A structured message consisting of Change Category (type), Scope identifier, Imperative Summary, optional Detailed Body, Breaking Change notice, and optional Footers.
-- **Monorepo Scope**: The contextual identifier denoting the subsystem or component being modified (e.g., `commifra`, `idea-collector`, `infra`, `repo`, `shared`, `ci`).
+- **Monorepo Scope**: The contextual identifier denoting the subsystem or component being modified (e.g., `commifra`, `idea-collector`, `infra`, `shared`, `ci`, `scripts`, `repo`, and `deps` for dependency-only changesets).
 - **Staging Changeset**: The collection of staged file additions, updates, and deletions currently prepared for commit in the version control index.
 
 ## Success Criteria *(mandatory)*
 
 ### Measurable Outcomes
 
-- **SC-001**: 100% of commits generated and processed through the workflow adhere to the Conventional Commits specification.
+- **SC-001**: 100% of commits generated and processed through the workflow adhere to the Conventional Commits specification, except git-generated merge, revert and rebase messages (`Merge …`, `Revert …`, `fixup!`, `squash!`) during a merge or rebase, which are kept as git created them.
 - **SC-002**: Contributor can review and execute a standardized commit within 30 seconds from invocation.
 - **SC-003**: 100% of detected breaking changes include explicit breaking change indicators in the commit message.
-- **SC-004**: Zero credentials, secrets, or temporary configuration files are committed to version control when using the standardized commit workflow.
-- **SC-005**: Format validation accurately identifies and reports 100% of non-compliant message headers (e.g., invalid category, trailing period, or missing imperative summary).
+- **SC-004**: Zero content matching a known credential or private-key format (the patterns in `contracts/safety-rules.md`) is committed through the standardized commit workflow, and no sensitive file (environment files, private keys, state files) is committed unless the contributor explicitly allowed that specific path.
+- **SC-005**: Format validation identifies and reports 100% of the mechanically checkable header defects (invalid category, malformed scope, header of 100 characters or more, uppercase first letter of the summary, trailing period, missing blank line before the body). Imperative mood is checked on a best-effort basis and reported as a warning-level defect with a suggested rewrite.
 
 ## Assumptions
 
 - **Specification Standard**: Conventional Commits v1.0.0 is the governing standard for commit formatting across this monorepo.
-- **Repository Context**: Scopes align with top-level applications (`apps/*`), infrastructure definitions (`infra/*`), and shared utilities or CI workflows (`.github/*`). Scopes remain optional for global repository chores.
+- **Repository Context**: Scopes align with top-level applications (`apps/*`), infrastructure definitions (`infra/*`), shared utilities (`packages/*`, `shared/*`), repository tooling (`scripts/*`), and CI workflows (`.github/*`). Scopes remain optional for global repository chores.
 - **Workflow Interface**: The skill is invoked directly within the developer / agent environment via standard skill invocation mechanisms.
 - **Git State**: Git is initialized and tracking files within the workspace root.

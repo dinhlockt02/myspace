@@ -21,6 +21,7 @@ audit_all_ai_skills() {
         "speckit-taskstoissues"
         "speckit-constitution"
         "speckit-pr"
+        "speckit-commit"
     )
 
     SKILLS_AUDIT_RECORDS=()
