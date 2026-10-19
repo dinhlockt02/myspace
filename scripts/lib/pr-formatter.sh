@@ -2,7 +2,9 @@
 # scripts/lib/pr-formatter.sh - Synthesis of PR title, description, scope, and verification steps
 
 # Succeeds if a specs/ directory name belongs to the given branch: the names match, the
-# numeric prefix (NNN) appears in the branch, or the branch changes files under that spec.
+# numeric prefix (NNN) appears in the branch, or the branch introduces that spec by adding
+# specs/<name>/spec.md. Merely editing files of an existing spec (a docs fix, a task update)
+# does not make the branch "the feature", so it must not pull in the spec's intent and tasks.
 feature_matches_branch() {
     local name="$1" branch="$2" base="$3"
     local leaf="${branch##*/}"
@@ -16,7 +18,7 @@ feature_matches_branch() {
         return 0
     fi
 
-    if get_branch_changed_files "$base" | grep -q "^specs/${name}/"; then
+    if get_branch_added_files "$base" | grep -qx "specs/${name}/spec.md"; then
         return 0
     fi
 
