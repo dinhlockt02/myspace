@@ -7,7 +7,8 @@
 | Export path | Provides |
 | :--- | :--- |
 | `@myspace/ui` | All components, layout primitives, `cn`, `ThemeProvider`, `useTheme`, `GoogleIcon` |
-| `@myspace/ui/theme.css` | Tokens, `@theme inline` mapping, dark variant, animation import. No base reset |
+| `@myspace/ui/theme.css` | Tokens, `@theme inline` mapping and the dark variant. No base reset, no animations |
+| `@myspace/ui/animate.css` | Enter/exit animation utilities (re-exports `tw-animate-css`). Import unlayered |
 | `@myspace/ui/theme-init` | The source of the blocking theme script, as a string, for `index.html` |
 
 The package is consumed from source (`exports` point at `src/`). Lucide icons are imported by applications directly from `lucide-react`; the package re-exports none of them.
@@ -54,7 +55,7 @@ The package is consumed from source (`exports` point at `src/`). Lucide icons ar
 | `useTheme()` | Returns `{ theme, resolvedTheme, setTheme }` with `theme` in `light`, `dark`, `system` and `resolvedTheme` in `light`, `dark` |
 | `theme-init` | Script that reads `ui-theme` (default `system`), resolves it and sets the `.dark` class before first paint; must run inline in `<head>` |
 
-Switching themes sets `data-theme-switching` on `<html>` for one frame so no transition runs half-way.
+Switching themes sets `data-theme-switching` on `<html>` for one frame and adds a short-lived `<style>` element that disables transitions while it is set, so no transition runs half-way. No consumer CSS is needed.
 
 ## Icons (FR-012)
 

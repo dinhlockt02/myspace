@@ -46,3 +46,8 @@ main
 # Lambda build output (built in CI by .github/actions/idea-collector/dependencies)
 apps/idea-collector/backend/bootstrap
 apps/idea-collector/backend/function.zip
+
+# Storybook static build and TypeScript build info
+storybook-static/
+*.tsbuildinfo
+.vitest/

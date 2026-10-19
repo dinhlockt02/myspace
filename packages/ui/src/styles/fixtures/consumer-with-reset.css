@@ -1,0 +1,8 @@
+/* The same consumer stylesheet after it opts in to the base reset. Used as the negative control. */
+@layer theme, base, components, utilities;
+@import "tailwindcss/theme.css" layer(theme);
+@import "../theme.css";
+@import "tailwindcss/preflight.css" layer(base);
+@import "tailwindcss/utilities.css" layer(utilities);
+@import "../animate.css";
+@source "../..";

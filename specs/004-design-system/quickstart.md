@@ -32,7 +32,7 @@ Expected: the catalog opens; every component from FR-014 and the three layout pr
 ```bash
 STORYBOOK_THEME=light pnpm nx run ui:test -- --project storybook
 STORYBOOK_THEME=dark  pnpm nx run ui:test -- --project storybook
-pnpm nx run ui:test -- --project browser    # real-browser tests: coexistence and responsive overflow
+pnpm nx run ui:test -- --project browser    # real-browser tests: coexistence, responsive overflow, forced colors
 ```
 
 Expected: all three runs pass with zero axe violations across every story. To prove the gate works, temporarily lower a token below its pair threshold or remove an `aria-label` from an icon button story: the run must fail naming the story and the rule.
@@ -78,11 +78,22 @@ Automated by `packages/ui/src/styles/theme-coexistence.browser.test.tsx` (the `b
 ## Scenario 10: Lint, types and build (constitution Principle III)
 
 ```bash
-pnpm nx run-many -t lint,typecheck,test,build -p ui idea-collector-frontend
+pnpm nx run-many -t lint,typecheck,test,build -p ui
+pnpm nx run-many -t lint,test,build -p idea-collector-frontend
 pnpm nx run ui:build-storybook
 ```
 
-Expected: all pass. Building the static catalog in CI is the gated workflow task (research D12).
+Expected: all pass. The application has no working `typecheck` target (Nx infers a disabled one and its sync generator then fails on the missing root `tsconfig.json`; this is the same on `main`), so its type check is the `tsc -b` that its `build` target runs first. Building the static catalog in CI is the gated workflow task (research D12).
+
+## Scenario 11: Forced colors (Windows High Contrast) (User Story 4, FR-006, FR-007)
+
+Automated for focus and borders by `packages/ui/src/components/forced-colors.browser.test.tsx` (the `browser` project in Scenario 3), which emulates the mode in Chromium. By hand, because the operating system also remaps colors the emulation does not show:
+
+1. Turn on a Windows contrast theme (Settings, Accessibility, Contrast themes), or in Chrome DevTools open Rendering and set "Emulate CSS media feature forced-colors" to `active`.
+2. Open the catalog story `Accessibility/Forced colors` and the migrated app (`pnpm nx run idea-collector-frontend:dev`).
+3. Tab through every control.
+
+Expected: control boundaries stay visible (inputs, selects, checkboxes, radios, filled buttons have a border), each focused control shows a solid outline, the highlighted select option is outlined, the checkbox check mark and radio dot are visible, and all text stays readable.
 
 ## Automated summary
 
@@ -93,4 +104,5 @@ Expected: all pass. Building the static catalog in CI is the gated workflow task
 | Keyboard `play` tests | `ui:test` storybook project | FR-006 |
 | Responsive overflow | `ui:test` browser project | FR-007, SC-004 |
 | No change to unstyled HTML (coexistence) | `ui:test` browser project | FR-009 |
+| Focus outline and borders in forced colors | `ui:test` browser project | FR-006, FR-007 |
 | Characterization tests | `idea-collector-frontend:test` | FR-013 |

@@ -17,6 +17,7 @@ direction and approve where policy requires.
 .
 ├── apps/          # One directory per project (frontend, backend, infra live inside each)
 ├── docs/          # Onboarding guide and AI-related documentation
+├── packages/      # Shared libraries (ui: the design system, see packages/ui/README.md)
 ├── scripts/       # Developer tooling: setup-dev.sh, pr-workflow.sh
 ├── specs/         # Spec Kit feature specs, plans and tasks (NNN-feature-name)
 ├── .github/       # GitHub Actions workflows and composite actions
@@ -44,6 +45,7 @@ pnpm lint               # lint every project
 pnpm test               # test every project
 pnpm build              # build every project
 pnpm nx run <project>:<target>   # run one target, e.g. idea-collector-infra:plan
+pnpm nx run ui:storybook        # browse the shared UI component catalog
 ```
 
 ## Workflow

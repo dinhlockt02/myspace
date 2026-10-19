@@ -29,14 +29,17 @@ One CSS entry file imported once from `main.tsx`, with this structure (order mat
 ```text
 @layer theme, base, components, utilities;
 @import "tailwindcss/theme.css" layer(theme);      /* Tailwind theme layer */
-@import "@myspace/ui/theme.css" layer(theme);      /* tokens, @theme mapping, dark variant */
+@import "@myspace/ui/theme.css";                   /* tokens, @theme mapping, dark variant; unlayered */
 @import "tailwindcss/utilities.css" layer(utilities);
+@import "@myspace/ui/animate.css";                 /* enter/exit animations; unlayered, see below */
 @source "../../../../packages/ui/src";            /* so utilities used by the package are generated */
 ```
 
 The base reset is **not** part of the shared theme (FR-009). An application adds it, as `@import "tailwindcss/preflight.css" layer(base);` between the theme and utilities imports, only when none of its remaining screens depend on browser-default or legacy styles. For idea-collector it is added at the end of the migration, once `App.css` is gone.
 
-Use the layered form with `layer(...)`. Tailwind 4.3 also compiles the unlayered form (`@import "tailwindcss/theme"`), but then nothing is placed in a cascade layer, so the base reset competes with legacy CSS on specificity and source order. Inside `layer(base)` it always ranks below any unlayered legacy CSS, which is what keeps un-migrated views safe. If `@theme` inside a file imported with `layer(theme)` turns out not to work, import `@myspace/ui/theme.css` without `layer()` and record the finding in `research.md` D13.
+Use the layered form for Tailwind's own files (`layer(theme)`, `layer(base)`, `layer(utilities)`). Tailwind 4.3 also compiles the unlayered form (`@import "tailwindcss/theme"`), but then nothing is placed in a cascade layer, so the base reset competes with legacy CSS on specificity and source order. Inside `layer(base)` it always ranks below any unlayered legacy CSS, which is what keeps un-migrated views safe.
+
+Two imports must stay **unlayered**, because Tailwind rejects these directives inside a `layer(...)` import ("cannot be nested"; found while implementing T024): `@myspace/ui/theme.css` (it uses `@theme` and `@custom-variant`) and `@myspace/ui/animate.css` (it pulls in `tw-animate-css`, which defines `@utility` rules). This costs nothing for FR-009: `theme.css` declares only variables, no element selectors, so layering it would protect nothing.
 
 ## 4. HTML
 

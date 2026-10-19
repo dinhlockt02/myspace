@@ -1,4 +1,15 @@
 import React, { useState } from 'react'
+import {
+  Alert,
+  AlertDescription,
+  Button,
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  Textarea,
+} from '@myspace/ui'
+import { CircleCheck, Lightbulb, TriangleAlert } from 'lucide-react'
 
 interface IdeaFormProps {
   draft: string
@@ -43,17 +54,22 @@ export const IdeaForm: React.FC<IdeaFormProps> = ({
   }
 
   return (
-    <div className="card idea-form-card">
-      <div className="card-header">
-        <h3>💡 Capture New Idea</h3>
-        <span className={`char-counter ${isOverLimit ? 'over-limit' : ''}`}>
+    <Card>
+      <CardHeader className="flex-row items-center justify-between gap-4">
+        <CardTitle className="flex items-center gap-2">
+          <Lightbulb aria-hidden="true" className="size-5" />
+          Capture New Idea
+        </CardTitle>
+        <span
+          className={`text-sm ${isOverLimit ? 'font-medium text-destructive' : 'text-muted-foreground'}`}
+        >
           {charCount} / {MAX_CHAR_COUNT}
         </span>
-      </div>
+      </CardHeader>
 
-      <form onSubmit={handleSubmit}>
-        <div className="form-group">
-          <textarea
+      <CardContent>
+        <form onSubmit={handleSubmit} className="grid gap-4">
+          <Textarea
             value={draft}
             onChange={(e) => {
               onDraftChange(e.target.value)
@@ -61,35 +77,34 @@ export const IdeaForm: React.FC<IdeaFormProps> = ({
               if (successNotice) setSuccessNotice(null)
             }}
             placeholder="Type your innovative thought or concept here..."
+            aria-label="Your idea"
             rows={5}
-            className="idea-textarea"
+            invalid={isOverLimit}
             disabled={submitting}
             maxLength={MAX_CHAR_COUNT + 100}
           />
-        </div>
 
-        {formError && (
-          <div className="form-alert error-alert" role="alert">
-            <span>⚠️</span> {formError}
+          {formError && (
+            <Alert variant="destructive">
+              <TriangleAlert aria-hidden="true" />
+              <AlertDescription>{formError}</AlertDescription>
+            </Alert>
+          )}
+
+          {successNotice && (
+            <Alert variant="success">
+              <CircleCheck aria-hidden="true" />
+              <AlertDescription>{successNotice}</AlertDescription>
+            </Alert>
+          )}
+
+          <div className="flex justify-end">
+            <Button type="submit" disabled={!isValid || submitting}>
+              {submitting ? 'Submitting...' : 'Submit Idea'}
+            </Button>
           </div>
-        )}
-
-        {successNotice && (
-          <div className="form-alert success-alert" role="status">
-            <span>✅</span> {successNotice}
-          </div>
-        )}
-
-        <div className="form-actions">
-          <button
-            type="submit"
-            className="btn btn-primary"
-            disabled={!isValid || submitting}
-          >
-            {submitting ? 'Submitting...' : 'Submit Idea'}
-          </button>
-        </div>
-      </form>
-    </div>
+        </form>
+      </CardContent>
+    </Card>
   )
 }

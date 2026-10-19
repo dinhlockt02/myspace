@@ -1,0 +1,7 @@
+/*
+ * Enter/exit animation utilities (animate-in, fade-in-*, zoom-in-*, slide-in-*) used by Dialog,
+ * Select and Tooltip. Import this file unlayered, after the utilities import: tw-animate-css
+ * defines @utility rules, which cannot be nested in a layer(...) import. Exported as
+ * @myspace/ui/animate.css so applications do not need tw-animate-css as their own dependency.
+ */
+@import "tw-animate-css";
