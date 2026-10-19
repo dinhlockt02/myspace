@@ -16,6 +16,11 @@ const browser = () => ({
   instances: [{ browser: 'chromium' as const }],
 })
 
+// Vite finds the JSX runtime only after the first story compiles and then re-optimizes dependencies,
+// which reloads the page mid-run and leaves two copies of React ("Cannot read properties of null
+// (reading 'useRef')"). Cold caches, as in CI, hit this every time, so list it up front.
+const optimizeDeps = { include: ['react/jsx-dev-runtime'] }
+
 export default defineConfig({
   envPrefix: ['VITE_', 'STORYBOOK_'],
   test: {
@@ -33,6 +38,7 @@ export default defineConfig({
       {
         // Tests that need real layout and computed styles (coexistence, responsive overflow)
         plugins: [react(), tailwindcss()],
+        optimizeDeps,
         test: {
           name: 'browser',
           include: ['src/**/*.browser.test.{ts,tsx}'],
@@ -42,6 +48,7 @@ export default defineConfig({
       {
         // Runs every story: axe accessibility checks and play (keyboard) tests
         plugins: [storybookTest({ configDir: path.join(dirname, '.storybook') })],
+        optimizeDeps,
         test: {
           name: 'storybook',
           // Preview annotations (including the a11y addon) are applied automatically
