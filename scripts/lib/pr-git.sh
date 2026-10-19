@@ -80,3 +80,11 @@ get_branch_changed_files() {
     mb=$(git merge-base "$base" HEAD 2>/dev/null || echo "$base")
     git diff --name-only "${mb}...HEAD" 2>/dev/null || git diff --name-only HEAD~1
 }
+
+# Files this branch adds relative to the base (diff-filter A)
+get_branch_added_files() {
+    local base="${1:-main}"
+    local mb
+    mb=$(git merge-base "$base" HEAD 2>/dev/null || echo "$base")
+    git diff --name-only --diff-filter=A "${mb}...HEAD" 2>/dev/null || true
+}
