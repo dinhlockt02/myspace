@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 # scripts/lib/pr-gates.sh - Pre-flight verification gates (git clean, lint, test, secrets audit)
 
+# Shared credential patterns (also used by commit-safety.sh)
+source "$(CDPATH="" cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/secret-patterns.sh"
+
 GATE_GIT_CLEAN=false
 GATE_LINT=false
 GATE_TEST=false
@@ -34,7 +37,7 @@ check_secret_leak_audit() {
     local diff_content
     diff_content=$(git diff "${mb}..HEAD" 2>/dev/null || git diff HEAD~1 2>/dev/null || echo "")
 
-    local secret_pattern='(aws_secret_access_key[[:space:]]*=[[:space:]]*[A-Za-z0-9/+=]{30,}|ghp_[a-zA-Z0-9]{36}|BEGIN[[:space:]]+(RSA|EC|OPENSSH|DSA)[[:space:]]+PRIVATE[[:space:]]+KEY)'
+    local secret_pattern="$SECRET_PATTERN"
 
     if echo "$diff_content" | grep -Ei "$secret_pattern" >/dev/null 2>&1; then
         GATE_SECRETS=false

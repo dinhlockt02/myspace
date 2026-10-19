@@ -8,6 +8,7 @@
   "scripts": {
     "setup": "bash scripts/setup-dev.sh",
     "pr": "bash scripts/pr-workflow.sh",
+    "commit": "bash scripts/commit-workflow.sh",
     "nx": "nx",
     "build": "nx run-many -t build",
     "test": "nx run-many -t test",
