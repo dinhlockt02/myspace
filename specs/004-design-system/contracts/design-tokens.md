@@ -7,7 +7,7 @@
 - Tokens are CSS custom properties with the standard, **unprefixed** shadcn names, defined under `:root` (light) and `.dark` (dark).
 - `@theme inline` in `theme.css` maps each token to a Tailwind utility (`bg-background`, `text-muted-foreground`, `border-input`, `ring-ring`, and so on), so components never use raw colors.
 - Values are `oklch`. Typography is the Tailwind system font stack and type scale; spacing is the Tailwind spacing scale; neither is redefined.
-- `theme.css` contains tokens, the `@theme inline` mapping, the dark variant declaration and the animation import only. It has **no** element selectors and **no** base reset (FR-009).
+- `theme.css` contains tokens, the `@theme inline` mapping and the dark variant declaration only. It has **no** element selectors, **no** base reset (FR-009) and no animations (those are in `animate.css`).
 
 ## Reference values
 

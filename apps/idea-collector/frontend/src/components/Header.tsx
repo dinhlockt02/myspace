@@ -1,4 +1,6 @@
 import React from 'react'
+import { AppHeader, Badge, Button } from '@myspace/ui'
+import { Lightbulb, User } from 'lucide-react'
 import { UserDTO } from '../services/api'
 
 interface HeaderProps {
@@ -8,30 +10,38 @@ interface HeaderProps {
 
 export const Header: React.FC<HeaderProps> = ({ user, onLogout }) => {
   return (
-    <header className="app-header">
-      <div className="header-brand">
-        <span className="brand-logo">💡</span>
-        <h1>Idea Collector</h1>
-      </div>
+    <AppHeader
+      brand={
+        <>
+          <Lightbulb aria-hidden="true" className="size-6 text-foreground" />
+          <h1 className="text-xl font-semibold text-foreground">Idea Collector</h1>
+        </>
+      }
+      actions={
+        <>
+          <Badge
+            variant="outline"
+            className="h-auto gap-2 py-1.5 text-sm font-normal"
+            title={`Signed in as ${user.email}`}
+          >
+            <User aria-hidden="true" className="size-4" />
+            <span className="flex min-w-0 flex-col text-left leading-tight">
+              {user.name && <span className="font-medium text-foreground">{user.name}</span>}
+              <span className="break-all text-muted-foreground">{user.email}</span>
+            </span>
+          </Badge>
 
-      <div className="header-user-section">
-        <div className="user-badge" title={`Signed in as ${user.email}`}>
-          <span className="user-icon">👤</span>
-          <div className="user-info">
-            {user.name && <span className="user-name">{user.name}</span>}
-            <span className="user-email">{user.email}</span>
-          </div>
-        </div>
-
-        <button
-          type="button"
-          className="btn btn-outline btn-sm"
-          onClick={onLogout}
-          title="Sign out of your session"
-        >
-          Sign Out
-        </button>
-      </div>
-    </header>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={onLogout}
+            title="Sign out of your session"
+          >
+            Sign Out
+          </Button>
+        </>
+      }
+    />
   )
 }

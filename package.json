@@ -3,7 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "workspaces": [
-    "apps/idea-collector/frontend"
+    "apps/idea-collector/frontend",
+    "packages/ui"
   ],
   "scripts": {
     "setup": "bash scripts/setup-dev.sh",

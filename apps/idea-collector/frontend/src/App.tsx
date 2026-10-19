@@ -1,3 +1,4 @@
+import { PageContainer, Spinner } from '@myspace/ui'
 import { useAuth } from './hooks/useAuth'
 import { useIdeas } from './hooks/useIdeas'
 import { useDraft } from './hooks/useDraft'
@@ -6,7 +7,6 @@ import { AuthPrompt } from './components/AuthPrompt'
 import { IdeaForm } from './components/IdeaForm'
 import { IdeaList } from './components/IdeaList'
 import { SessionExpiredModal } from './components/SessionExpiredModal'
-import './App.css'
 
 function App() {
   const {
@@ -28,35 +28,35 @@ function App() {
 
   if (authLoading) {
     return (
-      <div className="app-container app-loading">
-        <div className="spinner" />
-        <p>Loading application...</p>
-      </div>
+      <PageContainer className="flex min-h-svh flex-col items-center justify-center gap-4">
+        <Spinner size="lg" label="Loading application" />
+        <p className="text-muted-foreground">Loading application...</p>
+      </PageContainer>
     )
   }
 
   if (!user) {
     return (
-      <div className="app-container auth-view">
+      <PageContainer className="flex min-h-svh items-center justify-center py-8">
         <AuthPrompt
           error={authError}
           loading={authLoading}
         />
-      </div>
+      </PageContainer>
     )
   }
 
   return (
-    <div className="app-container workspace-view">
+    <PageContainer>
       <Header
         user={user}
         onLogout={logout}
       />
 
-      <main className="workspace-main">
-        <div className="workspace-intro">
-          <h2>Personal Idea Vault</h2>
-          <p>
+      <main className="grid gap-8 py-8">
+        <div className="grid gap-1">
+          <h2 className="text-2xl font-semibold">Personal Idea Vault</h2>
+          <p className="text-muted-foreground">
             Your ideas are strictly private and accessible only by you.
           </p>
         </div>
@@ -76,7 +76,7 @@ function App() {
         isOpen={isSessionExpired}
         onSuccess={() => window.location.reload()}
       />
-    </div>
+    </PageContainer>
   )
 }
 

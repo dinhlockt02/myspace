@@ -1,0 +1,47 @@
+{
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "name": "ui",
+  "projectType": "library",
+  "sourceRoot": "packages/ui/src",
+  "targets": {
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "pnpm run lint",
+        "cwd": "packages/ui"
+      }
+    },
+    "typecheck": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "pnpm run typecheck",
+        "cwd": "packages/ui"
+      }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "pnpm run test",
+        "cwd": "packages/ui"
+      },
+      "cache": false
+    },
+    "storybook": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "pnpm run storybook",
+        "cwd": "packages/ui"
+      }
+    },
+    "build-storybook": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "pnpm run build-storybook",
+        "cwd": "packages/ui"
+      },
+      "outputs": ["{projectRoot}/storybook-static"],
+      "cache": true
+    }
+  },
+  "tags": ["scope:shared", "type:lib"]
+}

@@ -35,6 +35,10 @@ jobs:
         shell: bash
         run: pnpm nx run idea-collector-frontend:lint
 
+      - name: Test Frontend
+        shell: bash
+        run: pnpm nx run idea-collector-frontend:test
+
       - name: Build Frontend
         shell: bash
         run: pnpm nx run idea-collector-frontend:build

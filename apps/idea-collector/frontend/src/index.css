@@ -1,0 +1,13 @@
+/*
+ * Design system entry (see specs/004-design-system/contracts/consumer-integration.md).
+ * The Tailwind base reset is on because every screen is on the design system and App.css is gone.
+ * theme.css and animate.css stay unlayered: Tailwind rejects @theme, @custom-variant and
+ * @utility inside a layer(...) import.
+ */
+@layer theme, base, components, utilities;
+@import "tailwindcss/theme.css" layer(theme);
+@import "@myspace/ui/theme.css";
+@import "tailwindcss/preflight.css" layer(base);
+@import "tailwindcss/utilities.css" layer(utilities);
+@import "@myspace/ui/animate.css";
+@source "../../../../packages/ui/src";

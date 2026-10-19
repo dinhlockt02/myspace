@@ -1,4 +1,6 @@
 import React from 'react'
+import { Badge, Card, CardContent, CardDescription, CardHeader, CardTitle, Spinner } from '@myspace/ui'
+import { Clock, Sparkles } from 'lucide-react'
 import { IdeaItem } from '../services/api'
 
 interface IdeaListProps {
@@ -25,48 +27,57 @@ export const IdeaList: React.FC<IdeaListProps> = ({ ideas, loading }) => {
 
   if (loading && ideas.length === 0) {
     return (
-      <div className="ideas-section">
-        <h3>Your Collection</h3>
-        <div className="loading-state">
-          <div className="spinner" />
+      <section className="grid gap-4">
+        <h3 className="text-xl font-semibold">Your Collection</h3>
+        <div className="flex items-center justify-center gap-3 py-8 text-muted-foreground">
+          <Spinner label="Loading" />
           <p>Loading your ideas...</p>
         </div>
-      </div>
+      </section>
     )
   }
 
   if (ideas.length === 0) {
     return (
-      <div className="ideas-section">
-        <h3>Your Collection</h3>
-        <div className="empty-state-card">
-          <div className="empty-state-icon">✨</div>
-          <h4>No ideas submitted yet</h4>
-          <p>Your private space is empty. Write and submit your first idea above to start building your collection!</p>
-        </div>
-      </div>
+      <section className="grid gap-4">
+        <h3 className="text-xl font-semibold">Your Collection</h3>
+        <Card className="items-center text-center">
+          <CardHeader className="items-center">
+            <Sparkles aria-hidden="true" className="mb-1 size-8 text-muted-foreground" />
+            <CardTitle as="h4">No ideas submitted yet</CardTitle>
+            <CardDescription>
+              Your private space is empty. Write and submit your first idea above to start building your collection!
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      </section>
     )
   }
 
   return (
-    <div className="ideas-section">
-      <div className="ideas-section-header">
-        <h3>Your Collection</h3>
-        <span className="badge-count">{ideas.length} {ideas.length === 1 ? 'idea' : 'ideas'}</span>
+    <section className="grid gap-4">
+      <div className="flex items-center justify-between gap-4">
+        <h3 className="text-xl font-semibold">Your Collection</h3>
+        <Badge variant="secondary">
+          {ideas.length} {ideas.length === 1 ? 'idea' : 'ideas'}
+        </Badge>
       </div>
 
-      <div className="ideas-grid">
+      <ul className="grid gap-4 sm:grid-cols-2">
         {ideas.map((item) => (
-          <article key={item.id} className="idea-card">
-            <p className="idea-content">{item.idea}</p>
-            <div className="idea-meta">
-              <span className="idea-time">
-                🕒 {formatDate(item.server_timestamp || item.client_timestamp)}
-              </span>
-            </div>
-          </article>
+          <li key={item.id}>
+            <Card className="h-full gap-3 py-4">
+              <CardContent className="grid gap-3">
+                <p className="break-words whitespace-pre-wrap">{item.idea}</p>
+                <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                  <Clock aria-hidden="true" className="size-4" />
+                  {formatDate(item.server_timestamp || item.client_timestamp)}
+                </p>
+              </CardContent>
+            </Card>
+          </li>
         ))}
-      </div>
-    </div>
+      </ul>
+    </section>
   )
 }

@@ -1,0 +1,75 @@
+name: UI package
+
+# Checks for packages/ui (@myspace/ui): lint, typecheck, tests in real Chromium for both themes,
+# and the static Storybook build. Standalone and path-filtered on purpose: it does not go through
+# the shared `detect` job, so changing it never triggers the app or infrastructure pipelines.
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'packages/ui/**'
+      - '.github/workflows/ui.on_pull_request.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ui:
+    name: ui / Lint, test and build Storybook
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Nx
+        uses: ./.github/actions/common/nx
+
+      - name: Install dependencies
+        shell: bash
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright Chromium
+        shell: bash
+        working-directory: packages/ui
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Lint
+        shell: bash
+        run: pnpm nx run ui:lint
+
+      - name: Typecheck
+        shell: bash
+        run: pnpm nx run ui:typecheck
+
+      - name: Unit tests
+        shell: bash
+        run: pnpm nx run ui:test -- --project unit
+
+      - name: Browser tests
+        shell: bash
+        run: pnpm nx run ui:test -- --project browser
+
+      # The theme matrix: every story is checked by axe once per theme
+      - name: Storybook tests (light theme)
+        shell: bash
+        env:
+          STORYBOOK_THEME: light
+        run: pnpm nx run ui:test -- --project storybook
+
+      - name: Storybook tests (dark theme)
+        shell: bash
+        env:
+          STORYBOOK_THEME: dark
+        run: pnpm nx run ui:test -- --project storybook
+
+      - name: Build Storybook
+        shell: bash
+        run: pnpm nx run ui:build-storybook
+
+      - name: Upload Storybook
+        uses: actions/upload-artifact@v4
+        with:
+          name: storybook-static
+          path: packages/ui/storybook-static
+          if-no-files-found: error
