@@ -129,7 +129,7 @@
 - [X] T026 [P] Register `speckit-commit` in the skills list in `scripts/lib/skills-audit.sh` and confirm `bash scripts/setup-dev.sh --verify-skills` still passes
 - [X] T027 [P] Add one line for `/speckit-commit` to the Workflow section of `README.md` next to `/speckit-pr`
 - [X] T028 Run `bash -n` on every new script, `bash scripts/tests/commit-workflow.test.sh`, `bash scripts/pr-workflow.sh check`, and each scenario in `quickstart.md` in a scratch clone; fix any failure and record the results in the PR description
-- [ ] T029 CI wiring for `scripts/tests/commit-workflow.test.sh` in a new `.github/workflows/` job (**requires explicit approval; `AGENTS.md` forbids changing CI workflows without it. Do not start unless the user instructs it**)
+- [X] T029 CI wiring for `scripts/tests/commit-workflow.test.sh`: approved by the owner on branch `ci/scripts/commit-workflow-tests`; added the standalone, path-filtered workflow `.github/workflows/scripts.on_pull_request.yml` (syntax check plus the test suite). It does not go through the shared `detect` job, so it never triggers the app or infrastructure pipelines
 
 ---
 
@@ -138,7 +138,7 @@
 - **Phase 1** has no dependencies; T002 and T003 can run alongside T001.
 - **Phase 2** depends on Phase 1 and blocks all stories. T004, T005 and T008 can run in parallel; T006 needs T005; T007 needs T005.
 - **US1 (Phase 3)** depends on Phase 2. **US2 (Phase 4)** depends only on Phase 2 and T001 (the output helpers live in `commit-output.sh`, not in `propose`), so it does not wait for US1's heuristics. **US3 (Phase 5)** depends on US1 (classification) and US2 (`commit`). **US4 (Phase 6)** depends only on Phase 2 (T008) and can run in parallel with US1/US2. Parallel stories never share a file: each command has its own `commit-cmd-*.sh`, each story its own `tests/cases/*.sh`. Within one file the tasks are ordered (`commit-cmd-commit.sh`: T015, T016, then T019; `commit-classify.sh`: T010, T011, then T018, T020).
-- **Phase 7** depends on all the stories it documents; T029 is blocked on explicit approval.
+- **Phase 7** depends on all the stories it documents; T029 needed explicit approval and was done afterwards on its own branch.
 
 ```text
 T001 -> (T002, T003) -> T004/T005/T008 -> T006, T007
@@ -150,7 +150,7 @@ T001 -> (T002, T003) -> T004/T005/T008 -> T006, T007
         +----------------------+-----------------------+
                                |
                                v
-                         US3 (T017-T020) [needs US1 + US2] -> Phase 7 (T024-T028) -> T029 (approval)
+                         US3 (T017-T020) [needs US1 + US2] -> Phase 7 (T024-T028) -> T029 (done, separate PR)
 ```
 
 ## Parallel Execution Examples
@@ -166,4 +166,4 @@ T001 -> (T002, T003) -> T004/T005/T008 -> T006, T007
 - **MVP**: Phases 1 to 4 (US1 and US2). That gives a proposal and a safe, confirmed commit, which is the P1 value in the spec. Stop and validate with quickstart scenarios 1 to 4, 8 and 9.
 - **Incremental delivery**: add US3 (breaking and multi-scope) next, then US4 (full linting), then the skill and docs. Each phase ends at a checkpoint that can be shipped on its own.
 - **Order within a story**: tests (confirm they fail), libraries, command wiring.
-- **Out of scope here**: CI wiring (T029) and changing the tracked `apps/idea-collector/frontend/.env` practice noted in `research.md` D9.
+- **Out of scope here**: changing the tracked `apps/idea-collector/frontend/.env` practice noted in `research.md` D9.
