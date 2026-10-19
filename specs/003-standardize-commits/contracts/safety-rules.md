@@ -16,7 +16,7 @@ It does not detect free-form secrets such as `password = hunter2` or an arbitrar
 | Pattern | Notes |
 | :--- | :--- |
 | `.env`, `.env.*` | Not `*.example`, `*.sample`, `*.template` |
-| `*.pem`, `*.key`, `*.p12`, `id_rsa*` | Private key material |
+| `*.pem`, `*.key`, `*.p12`, `id_rsa*` | Private key material (not `*.pub`, which are public keys) |
 | `*.tfstate`, `*.tfstate.*` | Terraform state |
 | `*.tfvars` | Not `*.tfvars.example` |
 | `credentials` | File named exactly `credentials` |
@@ -37,12 +37,14 @@ Matched with `grep -E` against `git diff --cached` added lines. The matched text
 | `slack-token` | `xox[baprs]-[A-Za-z0-9-]{10,}` | Slack token format | extended |
 | `github-token` | `gh[opusr]_[A-Za-z0-9]{36}` | GitHub token family | extended |
 | `github-fine-grained-pat` | `github_pat_[A-Za-z0-9_]{22,}` | GitHub fine-grained PAT | extended |
-| `pgp-private-key` | `BEGIN PGP PRIVATE KEY BLOCK` | PGP private key | extended |
+| `pgp-private-key` | `BEGIN[ ]PGP[ ]PRIVATE[ ]KEY[ ]BLOCK` (bracket form so the pattern does not match its own text) | PGP private key | extended |
 
 `secret-patterns.sh` exposes two variables:
 
 - `SECRET_PATTERN`: the **base** set, exactly what `scripts/lib/pr-gates.sh` uses today. `pr-gates.sh` keeps using only this, so PR gate behaviour does not change.
 - `SECRET_PATTERN_EXTENDED`: base plus extended, used by `commit-safety.sh`.
+
+**Self-reference rule**: no pattern may match the text of its own definition, or the workflow would refuse to commit `secret-patterns.sh` and this document. Write literal spaces inside a pattern as `[ ]`, and build fake secrets in tests and docs at runtime instead of writing them out.
 
 ## 3. Verified properties (at spec time)
 

@@ -91,6 +91,7 @@ commands:
 json_schemas:
   propose:
     status: ok | blocked | empty | error
+    error: string | null     # for example "protected-branch" when status is error
     branch: string
     git_state: normal | merge | rebase | cherry-pick
     staged_count: integer
@@ -106,6 +107,7 @@ json_schemas:
       scope: string | null
       summary: string | null
       header: string | null
+      message: string | null   # the header, or the prepared merge message while a merge/rebase is in progress
       breaking_hints: [string]
     warnings: [string]
     safety_findings:
@@ -130,6 +132,17 @@ json_schemas:
     header: string
     validation_warnings:     # warning-level validation issues; they never block the commit
       - rule: string
+        detail: string
+        suggestion: string | null
+    safety_findings:         # present only when blocked (exit 3); same shape as propose
+      - kind: sensitive-path | secret-pattern
+        path: string
+        rule: string
+        overridable: boolean
+        allowed: boolean
+    issues:                  # present only when the message is invalid (exit 1); same shape as validate
+      - rule: string
+        severity: error | warning
         detail: string
         suggestion: string | null
     error: string | null

@@ -84,7 +84,8 @@ Expected: `warnings` contains `multi-scope` and `split_suggestion` lists both sc
 ## Scenario 8 - Sensitive data blocked (FR-009, SC-004)
 
 ```bash
-echo "AWS_SECRET_ACCESS_KEY=abcdefghijklmnopqrstuvwxyz0123456789ABCD" > .env.production && git add -f .env.production
+# Build the fake key at runtime so this document itself contains no secret-looking literal
+printf 'AWS_SECRET_ACCESS_KEY=%s\n' "$(printf 'a%.0s' {1..40})" > .env.production && git add -f .env.production
 bash scripts/commit-workflow.sh commit --message "chore: add config" --yes ; echo "exit=$?"
 ```
 
