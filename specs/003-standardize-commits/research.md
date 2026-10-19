@@ -82,10 +82,10 @@ The spec had no `NEEDS CLARIFICATION` markers. This document records the design 
 ## D14. Testing and CI
 
 - **Decision**: A plain-Bash suite (`scripts/tests/commit-workflow.test.sh`) creating temp repos, runnable locally via `pnpm run commit -- test`. There is no existing test runner for shell scripts and adding bats would add a dependency.
-- **CI wiring**: Running it in GitHub Actions needs a workflow change, which `AGENTS.md` forbids without explicit instruction, so it is tracked as a separate approved task and not assumed.
+- **CI wiring (done)**: Running it in GitHub Actions needs a workflow change, which `AGENTS.md` forbids without explicit instruction. The owner approved it, and it was added as a standalone workflow `.github/workflows/scripts.on_pull_request.yml`, filtered to `scripts/**` and the commit skill files. It deliberately bypasses the shared `detect` job: `detect.mjs` treats any change to `.github/actions/common/` or the root `package.json` as global and would re-run every app and infrastructure pipeline.
 
 ## Open items for the owner
 
 1. ~~Should `req` (and `infra`) be accepted as commit types?~~ Resolved: yes (D3).
 2. Is the tracked `apps/idea-collector/frontend/.env` expected to stay? Default: yes, with the `--allow-sensitive` override (D9).
-3. Approval to add CI wiring for the new test suite (D14).
+3. ~~Approval to add CI wiring for the new test suite (D14).~~ Resolved: approved and done.

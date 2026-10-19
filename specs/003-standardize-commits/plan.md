@@ -40,12 +40,12 @@ Checked against constitution v1.1.0.
 
 - **I. AI-Native SDLC Pipeline**: PASS. Gives agents a deterministic, auditable way to commit and humans the same one. Scope is limited to FR-001 to FR-010; no speculative extras.
 - **II. Infrastructure as Code**: PASS (not applicable). No infra or state is touched.
-- **III. Automated Quality & CI/CD Gates**: PASS, with a recorded ruling. Lint/typecheck/tests for the script are the Bash test suite (`scripts/tests/commit-workflow.test.sh`) and must pass locally before the PR is opened, as Principle III and `AGENTS.md` require of agents. **Ruling (confirmed by the owner)**: developer tooling under `scripts/` is not a "service or package", so Principle III's per-service CI-workflow clause does not apply to it. Running the suite in GitHub Actions would edit `.github/workflows/`, which Agent Constraints forbid without explicit instruction, so it stays a separate task (T029) that starts only on explicit approval. If the owner later decides `scripts/` should be covered by CI, T029 becomes in scope and this ruling is replaced.
+- **III. Automated Quality & CI/CD Gates**: PASS, with a recorded ruling. Lint/typecheck/tests for the script are the Bash test suite (`scripts/tests/commit-workflow.test.sh`) and must pass locally before the PR is opened, as Principle III and `AGENTS.md` require of agents. **Ruling (confirmed by the owner)**: developer tooling under `scripts/` is not a "service or package", so Principle III's per-service CI-workflow clause does not apply to it. Running the suite in GitHub Actions would edit `.github/workflows/`, which Agent Constraints forbid without explicit instruction, so it was a separate task (T029) that started only on explicit approval, and it has since been done as a standalone workflow. If the owner later decides `scripts/` should be covered by CI, T029 becomes in scope and this ruling is replaced.
 - **IV. Strict Security & Credential Handling**: PASS. The feature itself enforces this principle: it blocks `.env`-style files, private keys, state files and token patterns before a commit is created, and never logs matched secret values.
 - **V. Codebase Respect & Localization**: PASS. Reuses the `scripts/` + `scripts/lib/` layout, `pnpm run` entry points, logging helpers from `scripts/lib/reporter.sh`, and the secret regex from `scripts/lib/pr-gates.sh` (shared, not copied).
 - **VI. Branch Discipline & Naming**: PASS. The CLI mirrors the `main`/`master` block and the skill documents the branch rules, so a commit is never made on a protected branch.
 
-**Post-design re-check (after Phase 1)**: PASS. No new violations; the one open item is the CI wiring approval noted under III. No Complexity Tracking entries needed.
+**Post-design re-check (after Phase 1)**: PASS. No new violations; the CI wiring noted under III was approved and done (T029). No Complexity Tracking entries needed.
 
 ## Project Structure
 
