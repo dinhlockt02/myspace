@@ -56,9 +56,10 @@ An end user interacts with recurring interface primitives across platform applic
 
 1. **Given** an interactive input field (e.g., text box, dropdown), **When** a user clicks, inputs content, or triggers validation errors, **Then** the control displays uniform focus rings, placeholder styling, and structured validation feedback.
 2. **Given** a button or actionable element, **When** a user hovers, presses, or attempts to interact while disabled, **Then** the component responds with standardized visual feedback matching platform interaction guidelines.
-3. **Given** a modal dialog or overlay prompt, **When** opened, **Then** focus is trapped within the dialog, the background is obscured with a standard backdrop, and dismissal mechanisms (Escape key, close icon, backdrop click) function identically across applications.
+3. **Given** a dismissible modal dialog or overlay prompt, **When** opened, **Then** focus is trapped within the dialog, the background is obscured with a standard backdrop, and dismissal mechanisms (Escape key, close icon, backdrop click) function identically across applications.
 4. **Given** the migrated idea-collector application, **When** a user signs in, submits an idea, views the idea list and lets the session expire, **Then** each flow behaves exactly as before, and every screen is built from the shared components and tokens.
 5. **Given** the component catalog, **When** a developer opens it, **Then** every component in the first-release set is shown with all of its states and variants in both light and dark themes.
+6. **Given** a modal dialog that requires the user to act before continuing (such as the session-expired dialog), **When** it is open, **Then** Escape and a backdrop click do not dismiss it, no close control is shown, and focus stays trapped inside it until the required action is taken.
 
 ---
 
@@ -106,7 +107,7 @@ A user navigating platform applications on mobile devices, tablets, or via assis
 
 ### Functional Requirements
 
-- **FR-001**: System MUST define a comprehensive design token system using semantic CSS variables (color palettes, typography scales, spacing units, border radii, shadows/elevations) distributed via a shared Tailwind CSS preset for monorepo applications. Initial token values come from the shadcn/ui default neutral theme (its neutral base color with matching light and dark variable sets) and the system font stack; this feature introduces no custom brand palette and no web font.
+- **FR-001**: System MUST define a comprehensive design token system using semantic CSS variables (color palettes, typography scales, spacing units, border radii, shadows/elevations) distributed via a shared Tailwind CSS preset for monorepo applications. Colors and radii carry semantic names (`background`, `primary`, `destructive`, `input`, `ring`, ...); typography, spacing and shadow tokens are the Tailwind CSS theme variables (`--text-*`, `--font-*`, `--spacing`, `--shadow-*`), which are CSS variables too and are shared through the same preset. Initial token values come from the shadcn/ui default neutral theme (its neutral base color with matching light and dark variable sets) and the system font stack; this feature introduces no custom brand palette and no web font.
 - **FR-002**: System MUST adopt Radix UI accessible headless primitives as the underlying foundation for interactive components (Dialog, Dropdown/Select, Checkbox, Radio, Tooltip), ensuring WCAG-compliant keyboard navigation and focus management with zero runtime styling overhead.
 - **FR-003**: All components MUST implement consistent interaction states: default, hover, focus, active, disabled, and error/invalid.
 - **FR-004**: System MUST support light and dark theme modes via CSS variable classes/attributes (e.g., `.dark` class) with automatic operating system preference detection and user override capability.
@@ -121,6 +122,7 @@ A user navigating platform applications on mobile devices, tablets, or via assis
 - **FR-013**: System MUST migrate every existing idea-collector frontend screen (header, idea form, idea list, sign-in prompt and session-expired dialog) onto the shared tokens and components as the first adopting application, removing the screens' own color, spacing and typography definitions, while preserving existing behavior (sign-in, idea submission, idea listing and the session-expired flow). The appearance of migrated screens changes to the new theme; pixel parity with the previous styling is not required.
 - **FR-014**: The first release of the UI library MUST include exactly these components: Button, Text Input, Textarea, Card, Dialog, Alert, Select, Checkbox, Radio, Tooltip, Spinner and Badge, plus the layout primitives in FR-011. Components outside this set (for example tabs, toast, popover, switch) are out of scope until a view needs them.
 - **FR-015**: System MUST validate accessibility automatically by running Storybook's accessibility add-on (axe) over every story of every component in FR-014, in both light and dark themes, as the check behind SC-002.
+- **FR-016**: Dialogs MUST be dismissible by default (Escape key, close control and backdrop click), and MUST support a non-dismissible mode for flows where the user has to act, such as the session-expired dialog preserved by FR-013.
 
 ### Key Entities
 
@@ -146,6 +148,7 @@ A user navigating platform applications on mobile devices, tablets, or via assis
 - **Component Catalog**: Storybook is a development tool in the shared UI package and adds nothing to the bundles of consuming applications. Building it in GitHub Actions modifies `.github/workflows/`, which `AGENTS.md` allows only with explicit approval, so the CI build step is requested separately when implementation reaches it.
 - **Accessibility Checks**: The automated axe rules cover contrast and markup rules; they do not by themselves prove full WCAG conformance or keyboard operability (FR-006).
 - **Visual Theme**: The visual identity of this feature is the stock shadcn/ui neutral theme plus the system font stack. A custom brand palette or typeface, if wanted later, is a token change only and does not require component changes.
+- **Dialog Dismissal**: Dismissal behavior is uniform across applications for dismissible dialogs. A dialog may be declared non-dismissible only for flows where leaving it would be wrong, and the existing session-expired dialog is the only such case in this feature.
 - **Initial Scope**: The first release is limited to the component set in FR-014 (what idea-collector needs today plus the components this spec names). Additional components are added incrementally when a view requires them.
 - **Library Foundation**: The shared UI library builds upon Radix UI headless accessible primitives, paired with centralized design tokens for visual presentation.
 - **Styling Architecture**: Visual presentation follows the Tailwind CSS + CSS variables paradigm (shadcn/ui model), styling Radix UI primitives with shared design token utilities.
